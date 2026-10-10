@@ -3,6 +3,7 @@ const session = require("express-session");
 const path = require("path");
 const fs = require("fs");
 const cors = require("cors");
+const axios = require("axios");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,6 +49,26 @@ function writeBotData(filename, data) {
 // AUTHENTICATION & MULTI-GUILD MANAGEMENT
 // -----------------------------------------------------------------------------
 
+
+
+// Discord OAuth2 Credentials (Configurable via environment variables)
+const DISCORD_CLIENT_ID = process.env.CLIENT_ID || "123456789012345678";
+const DISCORD_CLIENT_SECRET = process.env.CLIENT_SECRET || "";
+const DISCORD_REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:3000/api/auth/discord/callback";
+
+// Helper: Check if user has Administrator permission (0x8) or Manage Guild (0x20) in a guild
+function hasAdminPermissions(permissions) {
+  if (!permissions) return false;
+  const permBigInt = BigInt(permissions);
+  const ADMINISTRATOR = BigInt(0x8);
+  const MANAGE_GUILD = BigInt(0x20);
+  return (permBigInt & ADMINISTRATOR) === ADMINISTRATOR || (permBigInt & MANAGE_GUILD) === MANAGE_GUILD;
+}
+
+// -----------------------------------------------------------------------------
+// AUTHENTICATION & MULTI-GUILD MANAGEMENT (DISCORD OAUTH2 + DIRECT SYNC)
+// -----------------------------------------------------------------------------
+
 // Active demo/configured guilds recognized by AURA
 function getAvailableGuilds() {
   const levelData = readBotData("level-data.json", {});
@@ -82,6 +103,7 @@ app.get("/api/auth/me", (req, res) => {
   if (req.session && req.session.user) {
     return res.json({
       loggedIn: true,
+      authMethod: req.session.authMethod || "direct",
       user: req.session.user,
       selectedGuild: req.session.selectedGuild || null,
       guilds: req.session.guilds || [],
@@ -90,8 +112,92 @@ app.get("/api/auth/me", (req, res) => {
   res.json({ loggedIn: false, guilds: [] });
 });
 
-// Guild Login / Simulation
-// Allows any server owner or manager to select or input their guild ID and log in with their administrator profile
+// OAuth2 Redirect URL generator
+app.get("/api/auth/discord/url", (req, res) => {
+  const redirectUri = encodeURIComponent(req.query.redirectUri || DISCORD_REDIRECT_URI);
+  const clientId = process.env.CLIENT_ID || DISCORD_CLIENT_ID;
+  const scope = encodeURIComponent("identify guilds");
+  const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&prompt=consent`;
+  res.json({ url, configured: Boolean(DISCORD_CLIENT_SECRET) });
+});
+
+// OAuth2 Callback handler
+app.get("/api/auth/discord/callback", async (req, res) => {
+  const { code } = req.query;
+  if (!code) {
+    return res.redirect("/?error=missing_code");
+  }
+
+  if (!DISCORD_CLIENT_SECRET) {
+    console.warn("⚠️ CLIENT_SECRET not configured. Please add CLIENT_SECRET to environment variables for Discord OAuth2.");
+    return res.redirect("/?error=oauth_not_configured");
+  }
+
+  try {
+    // 1. Exchange code for access token
+    const tokenResponse = await axios.post(
+      "https://discord.com/api/oauth2/token",
+      new URLSearchParams({
+        client_id: process.env.CLIENT_ID || DISCORD_CLIENT_ID,
+        client_secret: DISCORD_CLIENT_SECRET,
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: DISCORD_REDIRECT_URI,
+      }).toString(),
+      {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      }
+    );
+
+    const accessToken = tokenResponse.data.access_token;
+
+    // 2. Fetch authenticated user profile
+    const userResponse = await axios.get("https://discord.com/api/users/@me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const discordUser = userResponse.data;
+
+    // 3. Fetch user's servers/guilds
+    const guildsResponse = await axios.get("https://discord.com/api/users/@me/guilds", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const allUserGuilds = guildsResponse.data;
+
+    // Filter guilds where user has Administrator or ManageGuild rights
+    const adminGuilds = allUserGuilds.filter((g) => g.owner || hasAdminPermissions(g.permissions));
+
+    const userProfile = {
+      id: discordUser.id,
+      username: discordUser.global_name || discordUser.username,
+      avatar: discordUser.avatar
+        ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png?size=256`
+        : "https://cdn.discordapp.com/embed/avatars/0.png",
+    };
+
+    req.session.authMethod = "oauth2";
+    req.session.user = userProfile;
+    req.session.guilds = adminGuilds.map((g) => ({
+      id: g.id,
+      name: g.name,
+      icon: g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : null,
+      owner: g.owner,
+      permissions: "Administrator",
+    }));
+
+    if (req.session.guilds.length > 0) {
+      req.session.selectedGuild = req.session.guilds[0];
+    } else {
+      req.session.selectedGuild = null;
+    }
+
+    res.redirect("/#server-config");
+  } catch (error) {
+    console.error("Discord OAuth2 exchange error:", error.response?.data || error.message);
+    res.redirect("/?error=oauth_failed");
+  }
+});
+
+// Direct Guild Login (Enter Server ID or select joined server)
 app.post("/api/auth/login", (req, res) => {
   const { guildId, username } = req.body;
   const available = getAvailableGuilds();
@@ -100,6 +206,7 @@ app.post("/api/auth/login", (req, res) => {
   const currentGuild = available.find((g) => g.id === targetGuildId) || {
     id: targetGuildId,
     name: `Server ${targetGuildId}`,
+    icon: null,
     owner: true,
     permissions: "Administrator",
   };
@@ -111,6 +218,7 @@ app.post("/api/auth/login", (req, res) => {
     avatar: "https://cdn.discordapp.com/embed/avatars/0.png",
   };
 
+  req.session.authMethod = "direct";
   req.session.user = user;
   req.session.selectedGuild = currentGuild;
   req.session.guilds = [currentGuild, ...available.filter((g) => g.id !== currentGuild.id)];
@@ -130,10 +238,11 @@ app.post("/api/auth/select-guild", (req, res) => {
     return res.status(401).json({ error: "Unauthorized. Please log in first." });
   }
 
-  const available = getAvailableGuilds();
-  const currentGuild = available.find((g) => g.id === guildId) || {
+  const userGuilds = req.session.guilds || getAvailableGuilds();
+  const currentGuild = userGuilds.find((g) => g.id === guildId) || {
     id: guildId,
     name: `Server ${guildId}`,
+    icon: null,
     owner: true,
     permissions: "Administrator",
   };

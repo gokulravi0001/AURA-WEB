@@ -89,22 +89,84 @@ function showToast(message) {
   }, 3500);
 }
 
-// Tab navigation
+// Tab navigation & URL Routing (Redirects each option to dedicated page/view)
 const dashTabs = document.querySelectorAll(".dash-tab-btn");
 const tabPanes = document.querySelectorAll(".tab-pane");
+const navLinks = document.querySelectorAll(".nav-link");
 
-function switchTab(tabId) {
+const tabRouteMap = {
+  "overview": "/",
+  "commands": "/commands",
+  "levels": "/leaderboard",
+  "security": "/security",
+  "server-config": "/server-config",
+  "sandbox": "/embed-studio",
+  "minigames": "/minigames"
+};
+
+const routeTabMap = {
+  "/": "overview",
+  "/overview": "overview",
+  "/commands": "commands",
+  "/leaderboard": "levels",
+  "/security": "security",
+  "/server-config": "server-config",
+  "/embed-studio": "sandbox",
+  "/minigames": "minigames"
+};
+
+function switchTab(tabId, updateUrl = true) {
+  // Update sidebar buttons
   dashTabs.forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === tabId);
   });
+
+  // Update navbar links
+  navLinks.forEach((link) => {
+    link.classList.toggle("active", link.dataset.route === tabId);
+  });
+
+  // Show corresponding tab pane
   tabPanes.forEach((pane) => {
     pane.classList.toggle("active", pane.id === `pane-${tabId}`);
   });
+
+  // Update browser URL without reloading if requested
+  if (updateUrl && tabRouteMap[tabId]) {
+    const targetUrl = tabRouteMap[tabId];
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState({ tabId }, "", targetUrl);
+    }
+  }
+
+  // Auto-scroll down smoothly to dashboard view
+  const dashSection = document.getElementById("dashboard");
+  if (dashSection && tabId !== "overview") {
+    dashSection.scrollIntoView({ behavior: "smooth" });
+  }
 }
+
+// Handle Browser Back / Forward Buttons
+window.addEventListener("popstate", () => {
+  const currentPath = window.location.pathname;
+  const tabId = routeTabMap[currentPath] || "overview";
+  switchTab(tabId, false);
+});
+
+// Intercept top nav link clicks for seamless single-page routing
+navLinks.forEach((link) => {
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    const route = link.dataset.route;
+    if (route) {
+      switchTab(route, true);
+    }
+  });
+});
 
 dashTabs.forEach((btn) => {
   btn.addEventListener("click", () => {
-    switchTab(btn.dataset.tab);
+    switchTab(btn.dataset.tab, true);
   });
 });
 
@@ -117,6 +179,23 @@ function openAuthModal() {
 function closeAuthModal() {
   const modal = document.getElementById("auth-modal");
   if (modal) modal.classList.remove("open");
+}
+
+// Discord OAuth2 Login redirect
+async function loginWithDiscord() {
+  try {
+    const res = await fetch("/api/auth/discord/url");
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      openAuthModal();
+      showToast("⚠️ Please configure CLIENT_SECRET or use Direct Server ID sync.");
+    }
+  } catch (err) {
+    console.error("OAuth2 error:", err);
+    openAuthModal();
+  }
 }
 
 // Authentication & Server Selection
@@ -134,6 +213,15 @@ async function checkAuth() {
       document.getElementById("banner-server-title").innerText = `Currently Managing: ${data.selectedGuild.name}`;
       document.getElementById("banner-server-id").innerText = `Guild ID: ${data.selectedGuild.id}`;
       document.getElementById("login-guild-id").value = data.selectedGuild.id;
+
+      if (data.user.avatar && document.getElementById("nav-guild-icon")) {
+        document.getElementById("nav-guild-icon").innerHTML = `<img src="${data.user.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.innerHTML='⚔️'">`;
+      }
+
+      // Render Admin Guilds in Auth Modal if available
+      if (data.guilds && data.guilds.length > 0) {
+        renderGuildSelectorList(data.guilds);
+      }
     } else {
       // Auto-login to default guild
       await handleLogin(true);
@@ -141,6 +229,56 @@ async function checkAuth() {
     loadGuildConfig();
   } catch (err) {
     console.error("Auth check failed:", err);
+  }
+}
+
+function renderGuildSelectorList(guilds) {
+  const listContainer = document.getElementById("auth-guild-list");
+  const itemsContainer = document.getElementById("auth-guild-items");
+  if (!listContainer || !itemsContainer) return;
+
+  listContainer.style.display = "block";
+  itemsContainer.innerHTML = guilds
+    .map((g) => `
+      <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.4); padding:0.6rem 0.8rem; border-radius:8px; border:1px solid rgba(255,42,85,0.2);">
+        <div style="display:flex; align-items:center; gap:0.6rem;">
+          <div style="width:28px; height:28px; border-radius:50%; background:#ff2a55; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold;">
+            ${g.icon ? `<img src="${g.icon}" style="width:100%;height:100%;border-radius:50%;">` : g.name.charAt(0)}
+          </div>
+          <div>
+            <div style="font-weight:600; color:#fff; font-size:0.85rem;">${g.name}</div>
+            <div style="font-size:0.7rem; color:var(--text-muted); font-family:var(--font-mono);">${g.id}</div>
+          </div>
+        </div>
+        <button onclick="selectGuild('${g.id}')" class="btn-flame-outline" style="padding:0.3rem 0.7rem; font-size:0.75rem;">
+          Manage ⚡
+        </button>
+      </div>
+    `)
+    .join("");
+}
+
+async function selectGuild(guildId) {
+  try {
+    const res = await fetch("/api/auth/select-guild", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ guildId }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentSelectedGuild = data.selectedGuild;
+      document.getElementById("nav-guild-name").innerText = data.selectedGuild.name;
+      document.getElementById("banner-server-title").innerText = `Currently Managing: ${data.selectedGuild.name}`;
+      document.getElementById("banner-server-id").innerText = `Guild ID: ${data.selectedGuild.id}`;
+      document.getElementById("login-guild-id").value = data.selectedGuild.id;
+      closeAuthModal();
+      showToast(`🔥 Switched to ${data.selectedGuild.name}!`);
+      loadGuildConfig();
+      loadLeaderboard();
+    }
+  } catch (err) {
+    console.error("Select guild error:", err);
   }
 }
 
@@ -582,7 +720,35 @@ if (titleInput) titleInput.addEventListener("input", updatePreview);
 if (descInput) descInput.addEventListener("input", updatePreview);
 if (colorInput) colorInput.addEventListener("input", updatePreview);
 
+// Initial Route Resolver
+function initRoute() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("error")) {
+    const err = params.get("error");
+    if (err === "oauth_not_configured") {
+      showToast("⚠️ Add CLIENT_SECRET to Render/Environment for Discord OAuth2.");
+    } else if (err === "oauth_failed") {
+      showToast("❌ Discord OAuth2 login failed. Please try again.");
+    }
+  }
+
+  // Check URL path first, then fallback to hash or default to overview
+  const currentPath = window.location.pathname;
+  let targetTab = routeTabMap[currentPath];
+  if (!targetTab && window.location.hash) {
+    const hash = window.location.hash.replace("#", "");
+    if (tabRouteMap[hash]) {
+      targetTab = hash;
+    }
+  }
+
+  if (targetTab && targetTab !== "overview") {
+    switchTab(targetTab, false);
+  }
+}
+
 // Initialize
+initRoute();
 checkAuth();
 loadOverview();
 loadCommands();

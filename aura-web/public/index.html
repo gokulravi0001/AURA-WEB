@@ -24,14 +24,33 @@
   <!-- Toast Notification -->
   <div id="toast-notify" class="toast-alert">🔥 Settings saved to Discord!</div>
 
-  <!-- Login & Server Switcher Modal -->
+  <!-- Login & Server Switcher Modal (Discord OAuth2 + Direct Server) -->
   <div id="auth-modal" class="modal-overlay">
     <div class="modal-card">
       <button class="modal-close-btn" onclick="closeAuthModal()">&times;</button>
       <div style="text-align: center; margin-bottom: 1.5rem;">
         <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🔥</div>
-        <h3 style="font-size: 1.5rem; color: #fff;">Server Manager Login</h3>
-        <p style="color: var(--text-muted); font-size: 0.85rem;">Login with your server ID or select a joined guild to configure AURA live in your Discord server.</p>
+        <h3 style="font-size: 1.5rem; color: #fff;">Server Control Login</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Authenticate with Discord to verify server ownership, or connect via Guild ID.</p>
+      </div>
+
+      <!-- OAuth2 Discord Login Button -->
+      <div style="margin-bottom: 1.5rem;">
+        <button class="btn-discord-oauth" onclick="loginWithDiscord()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.8rem; background: #5865f2; color: #fff; border: none; padding: 0.9rem; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; box-shadow: 0 0 20px rgba(88, 101, 242, 0.4); transition: transform 0.2s, background 0.2s;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+          </svg>
+          Log in with Discord (OAuth2)
+        </button>
+        <span style="display: block; text-align: center; font-size: 0.75rem; color: #b99dc2; margin-top: 6px;">
+          Authenticates your servers where you have Administrator or Manage Server permissions.
+        </span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1.2rem;">
+        <div style="flex: 1; height: 1px; background: rgba(255, 42, 85, 0.2);"></div>
+        <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Or Quick Guild Sync</span>
+        <div style="flex: 1; height: 1px; background: rgba(255, 42, 85, 0.2);"></div>
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 1.2rem;">
@@ -50,6 +69,14 @@
           Connect Server & Manage 🔥
         </button>
       </div>
+
+      <!-- User's Available Guilds List (when authenticated) -->
+      <div id="auth-guild-list" style="margin-top: 1.2rem; display: none;">
+        <label style="font-size: 0.85rem; color: #fff; margin-bottom: 0.4rem; display: block;">Your Admin Servers:</label>
+        <div id="auth-guild-items" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 150px; overflow-y: auto;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
     </div>
   </div>
 
@@ -62,25 +89,27 @@
 
     <nav>
       <ul class="nav-links">
-        <li><a class="nav-link active" onclick="switchTab('overview')">Overview</a></li>
-        <li><a class="nav-link" onclick="switchTab('commands')">Commands (30)</a></li>
-        <li><a class="nav-link" onclick="switchTab('levels')">XP Leaderboard</a></li>
-        <li><a class="nav-link" onclick="switchTab('security')">Anti-Raid Suite</a></li>
-        <li><a class="nav-link" onclick="switchTab('server-config')">Live Server Config</a></li>
-        <li><a class="nav-link" onclick="switchTab('sandbox')">Embed Studio</a></li>
+        <li><a class="nav-link active" href="/" data-route="overview">Overview</a></li>
+        <li><a class="nav-link" href="/commands" data-route="commands">Commands (30)</a></li>
+        <li><a class="nav-link" href="/leaderboard" data-route="levels">XP Leaderboard</a></li>
+        <li><a class="nav-link" href="/security" data-route="security">Anti-Raid Suite</a></li>
+        <li><a class="nav-link" href="/server-config" data-route="server-config">Live Server Config</a></li>
+        <li><a class="nav-link" href="/embed-studio" data-route="sandbox">Embed Studio</a></li>
       </ul>
     </nav>
 
     <div class="nav-actions">
       <!-- Active Guild Pill -->
-      <div id="guild-selector-pill" class="guild-selector-pill" onclick="openAuthModal()">
+      <div id="guild-selector-pill" class="guild-selector-pill" onclick="openAuthModal()" title="Switch or connect server">
         <div class="guild-avatar-circle" id="nav-guild-icon">⚔️</div>
         <div>
           <div style="font-size: 0.8rem; font-weight: 700; color: #fff;" id="nav-guild-name">Select Server</div>
           <div style="font-size: 0.65rem; color: #ff758f;" id="nav-user-label">Click to Connect</div>
         </div>
       </div>
-      <a href="#dashboard" class="btn-flame">Console ⚡</a>
+      <button onclick="loginWithDiscord()" class="btn-flame" style="gap: 0.4rem; padding: 0.55rem 1.1rem; font-size: 0.85rem;" id="nav-login-btn">
+        <span>⚡</span> Discord Auth
+      </button>
     </div>
   </header>
 
