@@ -1,0 +1,12 @@
+{
+  "1547837282109624462": {
+    "welcomeChannelId": "1548180114842325102",
+    "goodbyeChannelId": "1548180208379494451",
+    "welcomeTitle": "🔥 Welcome to Inferno Sanctuary!",
+    "welcomeMessage": "Greetings {user}! Prepare for flame power in {server}.",
+    "welcomeColor": "#FF2A55",
+    "goodbyeTitle": "Goodbye!",
+    "goodbyeMessage": "{user} left the server.",
+    "goodbyeColor": "#9D00FF"
+  }
+}

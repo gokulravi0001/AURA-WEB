@@ -1,0 +1,14 @@
+{
+  "name": "aura-web",
+  "version": "1.0.0",
+  "description": "AURA Bot - Flame-themed Command Center, Dashboard & Showcase",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.3",
+    "express-session": "^1.19.0"
+  }
+}

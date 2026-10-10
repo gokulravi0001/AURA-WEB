@@ -1,0 +1,69 @@
+{
+  "panels": [
+    {
+      "guildId": "1547837282109624462",
+      "channelId": "1548229832498745384",
+      "messageId": "1553246256569253932",
+      "roles": [
+        {
+          "emoji": "🩺",
+          "roleId": "1549353960358412298"
+        }
+      ]
+    },
+    {
+      "guildId": "1547837282109624462",
+      "channelId": "1548229832498745384",
+      "messageId": "1553248466048647271",
+      "roles": [
+        {
+          "emoji": "🌊",
+          "roleId": "1549320807950319666"
+        }
+      ]
+    },
+    {
+      "guildId": "1547837282109624462",
+      "channelId": "1548229832498745384",
+      "messageId": "1553253754206425189",
+      "title": "CHOOSSE YOUR  COLOR",
+      "description": "",
+      "roles": [
+        {
+          "emoji": "🩸",
+          "roleId": "1549321834753695794"
+        }
+      ]
+    },
+    {
+      "guildId": "1547837282109624462",
+      "channelId": "1548229832498745384",
+      "messageId": "1553277804005687347",
+      "title": "CHOOSE YOUR COLOR",
+      "description": "",
+      "oneChoice": true,
+      "accessRoleIds": [],
+      "roles": [
+        {
+          "emoji": "🌊",
+          "roleId": "1549320807950319666"
+        }
+      ]
+    },
+    {
+      "guildId": "1547837282109624462",
+      "channelId": "1548229832498745384",
+      "messageId": "1553278568518131723",
+      "title": "CHOOSE YOUR COLOR",
+      "description": "",
+      "oneChoice": true,
+      "accessRoleIds": [],
+      "roles": [
+        {
+          "emoji": "🌊",
+          "roleId": "1549320807950319666"
+        }
+      ]
+    }
+  ]
+}

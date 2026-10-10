@@ -1,0 +1,57 @@
+[
+  {
+    "guildId": "1547837282109624462",
+    "channelId": "1548543470749098034",
+    "messageId": "1553284385954992199",
+    "title": "TESTING ANNOUNCEMENT",
+    "description": "It's working fine"
+  },
+  {
+    "guildId": "1547837282109624462",
+    "channelId": "1548543470749098034",
+    "messageId": "1553286069976301644",
+    "title": "TESSTING",
+    "description": "ITS EORKING BETTER THAN I THOUGHT",
+    "createdAt": 1790402656845
+  },
+  {
+    "guildId": "1547837282109624462",
+    "channelId": "1553287099761954886",
+    "messageId": "1553287297015881840",
+    "title": "TESTING",
+    "description": "good ig its fine",
+    "createdAt": 1790402949611
+  },
+  {
+    "guildId": "1547837282109624462",
+    "channelId": "1553287099761954886",
+    "messageId": "1553287614436474903",
+    "title": "TESTING ANNOUNCEMENTS",
+    "description": "It's a friendly server with a bot that can be used to announce it",
+    "createdAt": 1790403025281
+  },
+  {
+    "guildId": "1547837282109624462",
+    "channelId": "1553287099761954886",
+    "messageId": "1553288891128221777",
+    "title": "TESTING ANNOUNCEMENT",
+    "description": "Atleast make it look good this time",
+    "createdAt": 1790403329511
+  },
+  {
+    "guildId": "1547837282109624462",
+    "channelId": "1553287099761954886",
+    "messageId": "1553289790970011758",
+    "title": "WELCOME TO  𝘼 𝙐 𝙍 𝘼     𝙏 𝘼 𝙈 𝙄 𝙇",
+    "description": "Welcome to 𝘼 𝙐 𝙍 𝘼     𝙏 𝘼 𝙈 𝙄 𝙇 .Hope you have better experience",
+    "createdAt": 1790403544143
+  },
+  {
+    "guildId": "1547837282109624462",
+    "channelId": "1553287099761954886",
+    "messageId": "1553290170256588800",
+    "title": "**WELCOME TO  \n𝘼 𝙐 𝙍 𝘼     𝙏 𝘼 𝙈 𝙄 𝙇**",
+    "description": "**Welcome to 𝘼 𝙐 𝙍 𝘼     𝙏 𝘼 𝙈 𝙄 𝙇 .Hope you have better experience**",
+    "createdAt": 1790403634460
+  }
+]

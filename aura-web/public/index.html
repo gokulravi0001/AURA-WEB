@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA • Red & Purple Flame Discord Command Center</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Ambient Glow & Dynamic Flame Canvas -->
+  <canvas id="canvas-fire"></canvas>
+  <div class="ambient-glow top-left"></div>
+  <div class="ambient-glow bottom-right"></div>
+  <div class="ambient-glow center"></div>
+
+  <!-- Toast Notification -->
+  <div id="toast-notify" class="toast-alert">🔥 Settings saved to Discord!</div>
+
+  <!-- Login & Server Switcher Modal -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeAuthModal()">&times;</button>
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🔥</div>
+        <h3 style="font-size: 1.5rem; color: #fff;">Server Manager Login</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Login with your server ID or select a joined guild to configure AURA live in your Discord server.</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+        <div class="form-group">
+          <label>Your Admin Username</label>
+          <input type="text" id="login-username" class="form-control" placeholder="e.g. FlameMaster" value="ServerManager">
+        </div>
+
+        <div class="form-group">
+          <label>Target Discord Server (Guild ID)</label>
+          <input type="text" id="login-guild-id" class="form-control" placeholder="e.g. 1547837282109624462" value="1547837282109624462">
+          <span style="font-size: 0.75rem; color: #ff758f; margin-top: 4px; display: block;">You can manage any server where AURA has Administrator access.</span>
+        </div>
+
+        <button class="btn-flame" style="width: 100%; justify-content: center; padding: 0.8rem;" onclick="handleLogin()">
+          Connect Server & Manage 🔥
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="flame-nav">
+    <div class="nav-brand">
+      <div class="nav-logo-icon">🔥</div>
+      <span class="nav-logo-text">AURA</span>
+    </div>
+
+    <nav>
+      <ul class="nav-links">
+        <li><a class="nav-link active" onclick="switchTab('overview')">Overview</a></li>
+        <li><a class="nav-link" onclick="switchTab('commands')">Commands (30)</a></li>
+        <li><a class="nav-link" onclick="switchTab('levels')">XP Leaderboard</a></li>
+        <li><a class="nav-link" onclick="switchTab('security')">Anti-Raid Suite</a></li>
+        <li><a class="nav-link" onclick="switchTab('server-config')">Live Server Config</a></li>
+        <li><a class="nav-link" onclick="switchTab('sandbox')">Embed Studio</a></li>
+      </ul>
+    </nav>
+
+    <div class="nav-actions">
+      <!-- Active Guild Pill -->
+      <div id="guild-selector-pill" class="guild-selector-pill" onclick="openAuthModal()">
+        <div class="guild-avatar-circle" id="nav-guild-icon">⚔️</div>
+        <div>
+          <div style="font-size: 0.8rem; font-weight: 700; color: #fff;" id="nav-guild-name">Select Server</div>
+          <div style="font-size: 0.65rem; color: #ff758f;" id="nav-user-label">Click to Connect</div>
+        </div>
+      </div>
+      <a href="#dashboard" class="btn-flame">Console ⚡</a>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main class="main-wrapper">
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-badge">
+        <span>⚡</span> AURA 2.5 • PUBLIC MULTIPURPOSE & SECURITY BOT
+      </div>
+      <h1 class="hero-title">
+        The Ultimate Flame For <br>
+        <span class="hero-flame-text">Discord Power & Protection.</span>
+      </h1>
+      <p class="hero-subtitle">
+        Connect your server, manage Anti-Raid shields in real time, view member XP leaderboards with usernames, set custom welcome embeds, and launch temporary voice channels.
+      </p>
+
+      <div class="hero-cta">
+        <button onclick="openAuthModal()" class="btn-flame" style="padding: 0.9rem 2.2rem; font-size: 1.05rem;">
+          Connect Your Server 🔥
+        </button>
+        <a href="#dashboard" onclick="switchTab('server-config')" class="btn-flame-outline" style="padding: 0.9rem 2rem;">
+          Live Server Config
+        </a>
+      </div>
+
+      <!-- Quick Metrics Row -->
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-icon">🛡️</div>
+          <div class="metric-data">
+            <h4 id="metric-servers">2</h4>
+            <p>Guilds Protected</p>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">👥</div>
+          <div class="metric-data">
+            <h4 id="metric-members">250+</h4>
+            <p>Ranked Members</p>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">⚡</div>
+          <div class="metric-data">
+            <h4 id="metric-commands">30</h4>
+            <p>Unified Slash Commands</p>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">🎫</div>
+          <div class="metric-data">
+            <h4 id="metric-tickets">Active</h4>
+            <p>Tickets & Voice Hubs</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Dashboard Section -->
+    <section id="dashboard" style="margin-top: 3rem;">
+      <div class="section-header">
+        <span class="section-tag">CONTROL SANCTUARY</span>
+        <h2 class="section-title">AURA Multipurpose Center</h2>
+        <p class="section-desc">Changes made here synchronize immediately to your Discord bot and active server.</p>
+      </div>
+
+      <!-- Live Sync Status Banner -->
+      <div class="sync-banner">
+        <div style="display: flex; align-items: center; gap: 0.8rem;">
+          <span style="font-size: 1.3rem;">⚡</span>
+          <div>
+            <strong style="color: #fff;" id="banner-server-title">Currently Managing: AURA Main Community</strong>
+            <div style="font-size: 0.8rem; color: var(--text-muted);" id="banner-server-id">Guild ID: 1547837282109624462</div>
+          </div>
+        </div>
+        <button class="btn-flame-outline" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="openAuthModal()">
+          Switch Server 🔄
+        </button>
+      </div>
+
+      <div class="dash-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="dash-sidebar">
+          <span class="dash-menu-title">Main Subsystems</span>
+          <button class="dash-tab-btn active" data-tab="overview">
+            <span>📊</span> System Status
+          </button>
+          <button class="dash-tab-btn" data-tab="server-config">
+            <span>⚙️</span> Live Server Config
+          </button>
+          <button class="dash-tab-btn" data-tab="levels">
+            <span>🏆</span> XP Leaderboard
+          </button>
+          <button class="dash-tab-btn" data-tab="commands">
+            <span>⚡</span> Command Library
+          </button>
+          <button class="dash-tab-btn" data-tab="security">
+            <span>🚨</span> Anti-Raid / Security
+          </button>
+          <button class="dash-tab-btn" data-tab="sandbox">
+            <span>🎨</span> Embed Studio
+          </button>
+          <button class="dash-tab-btn" data-tab="minigames">
+            <span>🎮</span> Minigames & Social
+          </button>
+        </aside>
+
+        <!-- Dynamic Content Pane -->
+        <div class="dash-tab-content">
+
+          <!-- Pane 1: Overview -->
+          <div class="tab-pane active" id="pane-overview">
+            <div style="margin-bottom: 1.5rem;">
+              <h3 style="font-size: 1.5rem; color:#fff;">System Vitality & Active Protections</h3>
+              <p style="color:var(--text-muted); font-size: 0.95rem;">Real-time health report of AURA's connected background services.</p>
+            </div>
+            <div class="dash-card-grid" id="feature-grid-target">
+              <!-- Dynamically populated via API -->
+            </div>
+          </div>
+
+          <!-- Pane 2: Live Server Configuration (Changes save directly to bot!) -->
+          <div class="tab-pane" id="pane-server-config">
+            <div style="margin-bottom: 1.5rem;">
+              <h3 style="font-size: 1.5rem; color:#fff;">⚙️ Live Server Control & Settings</h3>
+              <p style="color:var(--text-muted); font-size: 0.95rem;">Save custom greetings, anti-raid rules, or server lockdown directly to your Discord server.</p>
+            </div>
+
+            <div class="sandbox-grid">
+              <!-- Welcome Embed Settings -->
+              <div class="feature-box">
+                <h4 style="color: #ff4d6d; margin-bottom: 0.8rem; font-size: 1.1rem;">👋 Custom Welcome Announcement</h4>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                  <label>Welcome Title Header</label>
+                  <input type="text" id="cfg-welcome-title" class="form-control" value="Welcome to {server}!">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                  <label>Welcome Message Body (Variables: {user}, {server}, {count})</label>
+                  <textarea id="cfg-welcome-msg" class="form-control" rows="3">Welcome {user} to {server}! You are member #{count}!</textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label>Embed Flame Color</label>
+                  <input type="color" id="cfg-welcome-color" class="form-control" value="#ff2a55" style="height: 42px; padding: 2px;">
+                </div>
+                <button class="btn-flame" style="width: 100%; justify-content: center;" onclick="saveGreetingsConfig()">
+                  Save Greetings to Server 💾
+                </button>
+              </div>
+
+              <!-- Security & Lockdown Quick Toggles -->
+              <div class="feature-box">
+                <h4 style="color: #ff4d6d; margin-bottom: 0.8rem; font-size: 1.1rem;">🚨 Emergency & Anti-Raid Toggles</h4>
+                
+                <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1.2rem;">
+                  <label style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 0.7rem; border-radius: 8px;">
+                    <span>Anti-Raid Sentinel (Auto Join-Spam Protection)</span>
+                    <input type="checkbox" id="cfg-toggle-antiraid" checked style="width: 18px; height: 18px; accent-color: #ff2a55;">
+                  </label>
+
+                  <label style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 0.7rem; border-radius: 8px;">
+                    <span>Anti-Nuke Guard (Prevents Mass Channel/Role Wipe)</span>
+                    <input type="checkbox" id="cfg-toggle-antinuke" checked style="width: 18px; height: 18px; accent-color: #ff2a55;">
+                  </label>
+
+                  <label style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 0.7rem; border-radius: 8px;">
+                    <span>Anti-Spam & Link Filter (10m Mutes for Spammers)</span>
+                    <input type="checkbox" id="cfg-toggle-antispam" checked style="width: 18px; height: 18px; accent-color: #ff2a55;">
+                  </label>
+
+                  <label style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 42, 85, 0.15); border: 1px solid rgba(255,42,85,0.4); padding: 0.7rem; border-radius: 8px;">
+                    <span style="color: #ff4d6d; font-weight: 700;">Emergency Server Lockdown (@everyone muted)</span>
+                    <input type="checkbox" id="cfg-toggle-lockdown" style="width: 18px; height: 18px; accent-color: #ff2a55;">
+                  </label>
+                </div>
+
+                <button class="btn-flame" style="width: 100%; justify-content: center;" onclick="saveSecurityConfig()">
+                  Apply Security Settings 🔥
+                </button>
+              </div>
+
+              <!-- Media Link-To-Video & Reels Embedder -->
+              <div class="feature-box" style="grid-column: 1 / -1;">
+                <div class="feature-box-top">
+                  <h4 style="color: #ff4d6d; font-size: 1.1rem;">🎥 Auto Link-To-Video & Reels Converter</h4>
+                  <span class="feature-badge">Zero-Config</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+                  Automatically transforms pasted links into playable videos, Reels, or GIFs directly in chat. Members can watch without opening external apps or leaving Discord.
+                </p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.8rem; margin-bottom: 1.2rem;">
+                  <label style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 0.7rem; border-radius: 8px;">
+                    <span>📸 Instagram Reels</span>
+                    <input type="checkbox" id="cfg-media-ig" checked style="width: 18px; height: 18px; accent-color: #ff2a55;">
+                  </label>
+
+                  <label style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 0.7rem; border-radius: 8px;">
+                    <span>🎵 TikTok Videos</span>
+                    <input type="checkbox" id="cfg-media-tiktok" checked style="width: 18px; height: 18px; accent-color: #ff2a55;">
+                  </label>
+
+                  <label style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 0.7rem; border-radius: 8px;">
+                    <span>🐦 Twitter / X Clips</span>
+                    <input type="checkbox" id="cfg-media-twt" checked style="width: 18px; height: 18px; accent-color: #ff2a55;">
+                  </label>
+
+                  <label style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 0.7rem; border-radius: 8px;">
+                    <span>🤖 Reddit Video Clips</span>
+                    <input type="checkbox" id="cfg-media-reddit" checked style="width: 18px; height: 18px; accent-color: #ff2a55;">
+                  </label>
+                </div>
+
+                <button class="btn-flame" style="width: 100%; justify-content: center;" onclick="saveMediaSettings()">
+                  Save Media Embedder Rules 🎥
+                </button>
+              </div>
+
+              <!-- Rules Board & Channel Manager -->
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color: #ff4d6d; font-size: 1.1rem;">📜 Server Rules Manager</h4>
+                  <span class="feature-badge">Active</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.8rem;">
+                  Save rules directly to the bot. Used by the <code>/rules</code> command when rendering formatted server guideline boards.
+                </p>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label>Server Rules List (One per line)</label>
+                  <textarea id="cfg-rules-textarea" class="form-control" rows="5" placeholder="1. Be respectful to all members&#10;2. No spamming or advertising&#10;3. Follow Discord Terms of Service&#10;4. Keep discussions in the relevant channels"></textarea>
+                </div>
+                <button class="btn-flame" style="width: 100%; justify-content: center;" onclick="saveRulesConfig()">
+                  Publish Rules to Server 📜
+                </button>
+              </div>
+
+              <!-- Dynamic Temporary Voice Hub Setup -->
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color: #ff4d6d; font-size: 1.1rem;">🔊 Dynamic "Join to Create" Voice Hub</h4>
+                  <span class="feature-badge">Automated</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.8rem;">
+                  Configure the generator voice channel that automatically spawns private rooms when members join.
+                </p>
+                <div class="form-group" style="margin-bottom: 0.6rem;">
+                  <label>Trigger Voice Channel ID</label>
+                  <input type="text" id="cfg-voice-trigger-id" class="form-control" placeholder="e.g. 1548180114842325102">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.6rem;">
+                  <label>Category ID (Where new rooms spawn)</label>
+                  <input type="text" id="cfg-voice-category-id" class="form-control" placeholder="Leave empty for root">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label>Default Room Name (e.g. 🔊 {user}'s Room)</label>
+                  <input type="text" id="cfg-voice-default-name" class="form-control" value="🔊 {user}'s Room">
+                </div>
+                <button class="btn-flame" style="width: 100%; justify-content: center;" onclick="saveTempVoiceConfig()">
+                  Save Voice Hub Configuration 🔊
+                </button>
+              </div>
+
+              <!-- Support Tickets Panel & Staff Setup -->
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color: #ff4d6d; font-size: 1.1rem;">🎫 Support Tickets & Staff Hub</h4>
+                  <span class="feature-badge">Configured</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.8rem;">
+                  Setup your interactive ticket panel channel and staff roles with access to private tickets.
+                </p>
+                <div class="form-group" style="margin-bottom: 0.6rem;">
+                  <label>Ticket Category ID (Where open tickets spawn)</label>
+                  <input type="text" id="cfg-ticket-category-id" class="form-control" placeholder="e.g. 1548180114842325102">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.6rem;">
+                  <label>Staff Role IDs (Comma-separated)</label>
+                  <input type="text" id="cfg-ticket-staff-roles" class="form-control" placeholder="e.g. 1555900628809809971, 1555902019716382731">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label>Ticket Audit Log Channel ID</label>
+                  <input type="text" id="cfg-ticket-log-id" class="form-control" placeholder="Channel where ticket transcripts log">
+                </div>
+                <button class="btn-flame" style="width: 100%; justify-content: center;" onclick="saveTicketsConfig()">
+                  Save Ticket Settings 🎫
+                </button>
+              </div>
+
+              <!-- Moderation & Counting Hub -->
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color: #ff4d6d; font-size: 1.1rem;">🛡️ Mod Audit Logs & Minigame Channels</h4>
+                  <span class="feature-badge">Audit</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.8rem;">
+                  Designate channels for automatic punishment logging, warnings, and collaborative counting games.
+                </p>
+                <div class="form-group" style="margin-bottom: 0.6rem;">
+                  <label>Moderation Audit Log Channel ID</label>
+                  <input type="text" id="cfg-mod-log-id" class="form-control" placeholder="Where kicks, bans, and warns log">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.6rem;">
+                  <label>Collaborative Counting Channel ID</label>
+                  <input type="text" id="cfg-counting-channel-id" class="form-control" placeholder="Dedicated channel for /counting">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label>Level-Up Celebration Announcement Channel ID</label>
+                  <input type="text" id="cfg-levels-channel-id" class="form-control" placeholder="Where level up embeds celebrate">
+                </div>
+                <button class="btn-flame" style="width: 100%; justify-content: center;" onclick="saveChannelsHubConfig()">
+                  Save Channel Designations 🛡️
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pane 3: Leaderboards with USERNAMES and AVATARS -->
+          <div class="tab-pane" id="pane-levels">
+            <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h3 style="font-size: 1.5rem; color:#fff;">🏆 XP Leaderboard (Member Usernames)</h3>
+                <p style="color:var(--text-muted); font-size: 0.95rem;">Rankings display Discord usernames, profile avatars, level badges, and message counts.</p>
+              </div>
+              <button class="btn-flame-outline" style="padding: 0.4rem 1rem;" onclick="loadLeaderboard()">Refresh Rankings 🔄</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+              <table class="flame-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Member (Username)</th>
+                    <th>Level</th>
+                    <th>XP Earned</th>
+                    <th>Messages</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                  <!-- Populated with usernames & avatars -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Pane 4: Command Catalog -->
+          <div class="tab-pane" id="pane-commands">
+            <div class="cmd-toolbar">
+              <input type="text" id="cmd-search" class="search-input" placeholder="Search commands (/mod, /voice, /level)...">
+              <div class="category-pills">
+                <button class="pill-btn active" data-cat="all">All</button>
+                <button class="pill-btn" data-cat="Security">Security</button>
+                <button class="pill-btn" data-cat="Moderation">Moderation</button>
+                <button class="pill-btn" data-cat="Social">Social</button>
+                <button class="pill-cat pill-btn" data-cat="Voice Hub">Voice Hub</button>
+                <button class="pill-btn" data-cat="Leveling">Leveling</button>
+                <button class="pill-btn" data-cat="Minigames">Minigames</button>
+              </div>
+            </div>
+
+            <div class="commands-grid" id="commands-container">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Pane 5: Anti-Raid / Anti-Nuke -->
+          <div class="tab-pane" id="pane-security">
+            <div style="margin-bottom: 1.5rem;">
+              <h3 style="font-size: 1.5rem; color:#fff;">🚨 Anti-Raid & Anti-Nuke Shield Status</h3>
+              <p style="color:var(--text-muted); font-size: 0.95rem;">Automated security engines active in AURA to neutralize rogue admins, mass-bots, and spam raids.</p>
+            </div>
+
+            <div class="dash-card-grid">
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color:#fff;">Anti-Raid Sentinel</h4>
+                  <span class="feature-badge">Armed</span>
+                </div>
+                <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Monitors member join spikes (default: 5 joins / 10s) and automatically restricts verification channel access.</p>
+                <div style="font-family:var(--font-mono);font-size:0.8rem;color:#ff4d6d;">/security antiraid enable</div>
+              </div>
+
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color:#fff;">Anti-Nuke Protection</h4>
+                  <span class="feature-badge">Armed</span>
+                </div>
+                <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Instantly revokes permissions and kicks/bans any rogue moderator attempting mass channel/role deletion.</p>
+                <div style="font-family:var(--font-mono);font-size:0.8rem;color:#ff4d6d;">/security antinuke enable</div>
+              </div>
+
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color:#fff;">Anti-Spam & Link Filter</h4>
+                  <span class="feature-badge">Armed</span>
+                </div>
+                <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Detects high-frequency duplicate messages, invite links, and phishing URLs with automated 10-minute timeouts.</p>
+                <div style="font-family:var(--font-mono);font-size:0.8rem;color:#ff4d6d;">/security antispam enable</div>
+              </div>
+
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color:#fff;">Server Lockdown Switch</h4>
+                  <span class="feature-badge">Ready</span>
+                </div>
+                <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Immediately freezes `@everyone` write permissions server-wide across all text channels during emergencies.</p>
+                <div style="font-family:var(--font-mono);font-size:0.8rem;color:#ff4d6d;">/security lockdown</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pane 6: Embed Studio Sandbox -->
+          <div class="tab-pane" id="pane-sandbox">
+            <div style="margin-bottom: 1.5rem;">
+              <h3 style="font-size: 1.5rem; color:#fff;">🎨 Live Interactive Embed Studio</h3>
+              <p style="color:var(--text-muted); font-size: 0.95rem;">Test and preview your announcements, rules, or greeting messages exactly as they render inside Discord.</p>
+            </div>
+
+            <div class="sandbox-grid">
+              <div class="sandbox-form">
+                <div class="form-group">
+                  <label>Embed Title</label>
+                  <input type="text" id="embed-title-input" class="form-control" value="🔥 AURA Community Update">
+                </div>
+                <div class="form-group">
+                  <label>Accent Color (Hex / Flame)</label>
+                  <input type="color" id="embed-color-input" class="form-control" value="#ff2a55" style="height: 48px; padding: 4px; cursor: pointer;">
+                </div>
+                <div class="form-group">
+                  <label>Message Content / Description</label>
+                  <textarea id="embed-desc-input" rows="6" class="form-control">Welcome to our newly secured Discord server!
+AURA Anti-Raid has been enabled, and dynamic voice channels are now open. 
+
+Type `/help` to view all features or `/level show` to view your rank card!</textarea>
+                </div>
+              </div>
+
+              <!-- Live Discord Mock Preview -->
+              <div class="discord-preview-box">
+                <div class="discord-msg-header">
+                  <div class="discord-avatar">🔥</div>
+                  <div>
+                    <span style="font-weight: 700; color: #fff; font-size: 0.95rem;">AURA</span>
+                    <span class="discord-bot-badge">BOT</span>
+                    <span style="color: #949ba4; font-size: 0.75rem; margin-left: 0.4rem;">Today at 10:30 AM</span>
+                  </div>
+                </div>
+
+                <div class="discord-embed-card" id="preview-card">
+                  <div class="embed-preview-title" id="preview-title">🔥 AURA Community Update</div>
+                  <div class="embed-preview-desc" id="preview-desc">Welcome to our newly secured Discord server!
+AURA Anti-Raid has been enabled, and dynamic voice channels are now open. 
+
+Type `/help` to view all features or `/level show` to view your rank card!</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pane 7: Minigames & Social -->
+          <div class="tab-pane" id="pane-minigames">
+            <div style="margin-bottom: 1.5rem;">
+              <h3 style="font-size: 1.5rem; color:#fff;">🎮 Minigames & Social Ecosystem</h3>
+              <p style="color:var(--text-muted); font-size: 0.95rem;">Ignite server activity with zero-latency chat mini-games and interactive identity systems.</p>
+            </div>
+
+            <div class="dash-card-grid">
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color:#fff;">Collaborative Counting</h4>
+                  <span class="feature-badge">Active</span>
+                </div>
+                <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Strict mode resets count to 0 if a member counts twice in a row or enters an invalid integer.</p>
+                <div style="font-family:var(--font-mono);font-size:0.8rem;color:#c77dff;">Commands: /counting setup • /counting stats</div>
+              </div>
+
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color:#fff;">Shiritori Word Chain</h4>
+                  <span class="feature-badge">Active</span>
+                </div>
+                <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Every word must begin with the last character of the previous player's entry. Tracks guild records.</p>
+                <div style="font-family:var(--font-mono);font-size:0.8rem;color:#c77dff;">Commands: /wordbuilding setup • /wordbuilding stats</div>
+              </div>
+
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color:#fff;">Away From Keyboard (AFK)</h4>
+                  <span class="feature-badge">Active</span>
+                </div>
+                <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Notifies members when they ping an AFK user and automatically welcomes them back when they chat.</p>
+                <div style="font-family:var(--font-mono);font-size:0.8rem;color:#c77dff;">Commands: /afk set &lt;status&gt; • /afk clear</div>
+              </div>
+
+              <div class="feature-box">
+                <div class="feature-box-top">
+                  <h4 style="color:#fff;">Reputation & Praise</h4>
+                  <span class="feature-badge">Active</span>
+                </div>
+                <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Allows members to award +1 rep to helpful users with 24h anti-abuse cooldown timers.</p>
+                <div style="font-family:var(--font-mono);font-size:0.8rem;color:#c77dff;">Commands: /rep give &lt;user&gt; • /rep leaderboard</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Flame Footer -->
+  <footer class="flame-footer">
+    <div class="footer-flame-brand">🔥 AURA BOT SYSTEM</div>
+    <p>Engineered with Discord.js v14 &bull; Red & Purple Neon Flame Core &bull; Unified 30-Command Architecture</p>
+    <p style="margin-top: 0.5rem; color: #705877;">&copy; 2026 AURA Multipurpose & Security Bot. All rights reserved.</p>
+  </footer>
+
+  <!-- Script -->
+  <script src="app.js"></script>
+</body>
+</html>
