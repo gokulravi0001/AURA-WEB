@@ -114,10 +114,21 @@ app.get("/api/auth/me", (req, res) => {
 
 // OAuth2 Redirect URL generator
 app.get("/api/auth/discord/url", (req, res) => {
-  const redirectUri = encodeURIComponent(req.query.redirectUri || DISCORD_REDIRECT_URI);
+  // Determine redirect URI: query param > configured env > request host origin
+  let redirectUri = req.query.redirectUri;
+  if (!redirectUri) {
+    if (process.env.REDIRECT_URI) {
+      redirectUri = process.env.REDIRECT_URI;
+    } else {
+      const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
+      const host = req.headers["x-forwarded-host"] || req.headers.host;
+      redirectUri = `${proto}://${host}/api/auth/discord/callback`;
+    }
+  }
+
   const clientId = process.env.CLIENT_ID || DISCORD_CLIENT_ID;
   const scope = encodeURIComponent("identify guilds");
-  const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&prompt=consent`;
+  const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&prompt=consent`;
   res.json({ url, configured: Boolean(DISCORD_CLIENT_SECRET) });
 });
 
@@ -134,6 +145,14 @@ app.get("/api/auth/discord/callback", async (req, res) => {
   }
 
   try {
+    // Determine the exact callback redirect URI used in authorize step
+    let redirectUri = process.env.REDIRECT_URI;
+    if (!redirectUri) {
+      const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
+      const host = req.headers["x-forwarded-host"] || req.headers.host;
+      redirectUri = `${proto}://${host}/api/auth/discord/callback`;
+    }
+
     // 1. Exchange code for access token
     const tokenResponse = await axios.post(
       "https://discord.com/api/oauth2/token",
@@ -142,7 +161,7 @@ app.get("/api/auth/discord/callback", async (req, res) => {
         client_secret: DISCORD_CLIENT_SECRET,
         grant_type: "authorization_code",
         code,
-        redirect_uri: DISCORD_REDIRECT_URI,
+        redirect_uri: redirectUri,
       }).toString(),
       {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },

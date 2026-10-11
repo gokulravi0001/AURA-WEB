@@ -184,7 +184,8 @@ function closeAuthModal() {
 // Discord OAuth2 Login redirect
 async function loginWithDiscord() {
   try {
-    const res = await fetch("/api/auth/discord/url");
+    const callbackUri = `${window.location.origin}/api/auth/discord/callback`;
+    const res = await fetch(`/api/auth/discord/url?redirectUri=${encodeURIComponent(callbackUri)}`);
     const data = await res.json();
     if (data.url) {
       window.location.href = data.url;
