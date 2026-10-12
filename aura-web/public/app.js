@@ -1,27 +1,32 @@
-// Canvas Animated Flame & Ember Particles
-const canvas = document.getElementById("canvas-fire");
-const ctx = canvas.getContext("2d");
+// =============================================================================
+// AURA RED & PURPLE FLAME - INTERACTIVE CLIENT ENGINE (NEKOTINA STYLE)
+// =============================================================================
+
+// Background Animated Flame & Ember Particles
+const canvas = document.getElementById("aura-canvas-fire");
+const ctx = canvas ? canvas.getContext("2d") : null;
 
 let particles = [];
 let width = (canvas.width = window.innerWidth);
 let height = (canvas.height = window.innerHeight);
 
 window.addEventListener("resize", () => {
+  if (!canvas) return;
   width = canvas.width = window.innerWidth;
   height = canvas.height = window.innerHeight;
 });
 
-class FlameParticle {
+class EmberParticle {
   constructor() {
     this.reset();
   }
 
   reset() {
     this.x = Math.random() * width;
-    this.y = height + Math.random() * 50;
-    this.vx = (Math.random() - 0.5) * 1.5;
-    this.vy = -(Math.random() * 2.5 + 1.2);
-    this.size = Math.random() * 4.5 + 1.5;
+    this.y = height + Math.random() * 40;
+    this.vx = (Math.random() - 0.5) * 1.4;
+    this.vy = -(Math.random() * 2.2 + 1.0);
+    this.size = Math.random() * 3.8 + 1.2;
     this.life = 0;
     this.maxLife = Math.random() * 120 + 80;
     this.colorType = Math.random();
@@ -39,138 +44,143 @@ class FlameParticle {
 
   draw() {
     const progress = this.life / this.maxLife;
-    const alpha = Math.sin(progress * Math.PI) * 0.7;
+    const alpha = Math.sin(progress * Math.PI) * 0.75;
 
     ctx.save();
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
 
-    if (this.colorType < 0.5) {
+    if (this.colorType < 0.55) {
       ctx.fillStyle = `rgba(255, 42, 85, ${alpha})`;
       ctx.shadowColor = "#ff2a55";
-    } else if (this.colorType < 0.85) {
-      ctx.fillStyle = `rgba(180, 0, 255, ${alpha})`;
-      ctx.shadowColor = "#b400ff";
+    } else if (this.colorType < 0.88) {
+      ctx.fillStyle = `rgba(179, 0, 255, ${alpha})`;
+      ctx.shadowColor = "#b300ff";
     } else {
-      ctx.fillStyle = `rgba(255, 120, 0, ${alpha})`;
-      ctx.shadowColor = "#ff7800";
+      ctx.fillStyle = `rgba(255, 77, 136, ${alpha})`;
+      ctx.shadowColor = "#ff4d88";
     }
 
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 10;
     ctx.fill();
     ctx.restore();
   }
 }
 
-for (let i = 0; i < 90; i++) {
-  const p = new FlameParticle();
-  p.y = Math.random() * height;
-  particles.push(p);
-}
-
-function animateParticles() {
-  ctx.clearRect(0, 0, width, height);
-  for (let i = 0; i < particles.length; i++) {
-    particles[i].update();
-    particles[i].draw();
+if (ctx) {
+  for (let i = 0; i < 75; i++) {
+    const p = new EmberParticle();
+    p.y = Math.random() * height;
+    particles.push(p);
   }
-  requestAnimationFrame(animateParticles);
+
+  function animateEmber() {
+    ctx.clearRect(0, 0, width, height);
+    for (let i = 0; i < particles.length; i++) {
+      particles[i].update();
+      particles[i].draw();
+    }
+    requestAnimationFrame(animateEmber);
+  }
+  animateEmber();
 }
-animateParticles();
 
 // Toast helper
 function showToast(message) {
   const toast = document.getElementById("toast-notify");
   if (!toast) return;
-  toast.innerText = message || "🔥 Changes saved to Discord!";
+  toast.innerText = message || "🔥 Changes saved!";
   toast.style.display = "block";
   setTimeout(() => {
     toast.style.display = "none";
   }, 3500);
 }
 
-// Tab navigation & URL Routing (Redirects each option to dedicated page/view)
-const dashTabs = document.querySelectorAll(".dash-tab-btn");
-const tabPanes = document.querySelectorAll(".tab-pane");
-const navLinks = document.querySelectorAll(".nav-link");
-
-const tabRouteMap = {
-  "overview": "/",
-  "commands": "/commands",
-  "levels": "/leaderboard",
-  "security": "/security",
-  "server-config": "/server-config",
-  "sandbox": "/embed-studio",
-  "minigames": "/minigames"
+// =============================================================================
+// NEKOTINA-STYLE MULTI-PAGE VIEW ROUTING
+// =============================================================================
+const views = {
+  home: document.getElementById("view-home"),
+  commands: document.getElementById("view-commands"),
+  leaderboard: document.getElementById("view-leaderboard"),
+  dashboard: document.getElementById("view-dashboard"),
+  docs: document.getElementById("view-docs"),
 };
 
-const routeTabMap = {
-  "/": "overview",
-  "/overview": "overview",
+const viewUrlMap = {
+  home: "/",
+  commands: "/commands",
+  leaderboard: "/leaderboard",
+  dashboard: "/dashboard",
+  docs: "/docs",
+};
+
+const urlViewMap = {
+  "/": "home",
+  "/home": "home",
   "/commands": "commands",
-  "/leaderboard": "levels",
-  "/security": "security",
-  "/server-config": "server-config",
-  "/embed-studio": "sandbox",
-  "/minigames": "minigames"
+  "/leaderboard": "leaderboard",
+  "/dashboard": "dashboard",
+  "/docs": "docs",
 };
 
-function switchTab(tabId, updateUrl = true) {
-  // Update sidebar buttons
-  dashTabs.forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.tab === tabId);
+function navigateTo(viewName, e, updateUrl = true) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (!views[viewName]) viewName = "home";
+
+  // Hide all views, show targeted view
+  Object.keys(views).forEach((vKey) => {
+    if (views[vKey]) {
+      views[vKey].classList.toggle("active-view", vKey === viewName);
+    }
   });
 
-  // Update navbar links
-  navLinks.forEach((link) => {
-    link.classList.toggle("active", link.dataset.route === tabId);
+  // Update navbar links active state
+  document.querySelectorAll(".nav-link").forEach((link) => {
+    link.classList.toggle("active", link.dataset.view === viewName);
   });
 
-  // Show corresponding tab pane
-  tabPanes.forEach((pane) => {
-    pane.classList.toggle("active", pane.id === `pane-${tabId}`);
-  });
-
-  // Update browser URL without reloading if requested
-  if (updateUrl && tabRouteMap[tabId]) {
-    const targetUrl = tabRouteMap[tabId];
+  // Push URL to browser history
+  if (updateUrl && viewUrlMap[viewName]) {
+    const targetUrl = viewUrlMap[viewName];
     if (window.location.pathname !== targetUrl) {
-      window.history.pushState({ tabId }, "", targetUrl);
+      window.history.pushState({ viewName }, "", targetUrl);
     }
   }
 
-  // Auto-scroll down smoothly to dashboard view
-  const dashSection = document.getElementById("dashboard");
-  if (dashSection && tabId !== "overview") {
-    dashSection.scrollIntoView({ behavior: "smooth" });
-  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  if (viewName === "commands") loadCommands();
+  if (viewName === "leaderboard") loadLeaderboard();
+  if (viewName === "dashboard") loadGuildConfig();
 }
 
-// Handle Browser Back / Forward Buttons
+function navigateToDashboardTab(paneId) {
+  navigateTo("dashboard");
+  const fullPaneId = paneId.startsWith("pane-") ? paneId : `pane-${paneId}`;
+  switchDashPane(fullPaneId);
+}
+
+// Dashboard sidebar switcher
+function switchDashPane(paneId) {
+  document.querySelectorAll(".dash-nav-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.pane === paneId);
+  });
+  document.querySelectorAll(".config-pane").forEach((pane) => {
+    pane.classList.toggle("active-pane", pane.id === paneId);
+  });
+}
+
+// Handle browser Back / Forward buttons
 window.addEventListener("popstate", () => {
   const currentPath = window.location.pathname;
-  const tabId = routeTabMap[currentPath] || "overview";
-  switchTab(tabId, false);
+  const targetView = urlViewMap[currentPath] || "home";
+  navigateTo(targetView, null, false);
 });
 
-// Intercept top nav link clicks for seamless single-page routing
-navLinks.forEach((link) => {
-  link.addEventListener("click", (e) => {
-    e.preventDefault();
-    const route = link.dataset.route;
-    if (route) {
-      switchTab(route, true);
-    }
-  });
-});
-
-dashTabs.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    switchTab(btn.dataset.tab, true);
-  });
-});
-
-// Modal helpers
+// =============================================================================
+// AUTHENTICATION & DISCORD OAUTH2 HANDLER
+// =============================================================================
 function openAuthModal() {
   const modal = document.getElementById("auth-modal");
   if (modal) modal.classList.add("open");
@@ -181,7 +191,6 @@ function closeAuthModal() {
   if (modal) modal.classList.remove("open");
 }
 
-// Discord OAuth2 Login redirect
 async function loginWithDiscord() {
   try {
     const callbackUri = `${window.location.origin}/api/auth/discord/callback`;
@@ -191,7 +200,7 @@ async function loginWithDiscord() {
       window.location.href = data.url;
     } else {
       openAuthModal();
-      showToast("⚠️ Please configure CLIENT_SECRET or use Direct Server ID sync.");
+      showToast("⚠️ CLIENT_SECRET required for OAuth2. Direct sync available below.");
     }
   } catch (err) {
     console.error("OAuth2 error:", err);
@@ -199,7 +208,6 @@ async function loginWithDiscord() {
   }
 }
 
-// Authentication & Server Selection
 let currentSelectedGuild = null;
 
 async function checkAuth() {
@@ -209,27 +217,34 @@ async function checkAuth() {
 
     if (data.loggedIn && data.selectedGuild) {
       currentSelectedGuild = data.selectedGuild;
-      document.getElementById("nav-guild-name").innerText = data.selectedGuild.name;
-      document.getElementById("nav-user-label").innerText = `Admin: ${data.user.username}`;
-      document.getElementById("banner-server-title").innerText = `Currently Managing: ${data.selectedGuild.name}`;
-      document.getElementById("banner-server-id").innerText = `Guild ID: ${data.selectedGuild.id}`;
-      document.getElementById("login-guild-id").value = data.selectedGuild.id;
-
-      if (data.user.avatar && document.getElementById("nav-guild-icon")) {
-        document.getElementById("nav-guild-icon").innerHTML = `<img src="${data.user.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.innerHTML='⚔️'">`;
-      }
-
-      // Render Admin Guilds in Auth Modal if available
-      if (data.guilds && data.guilds.length > 0) {
-        renderGuildSelectorList(data.guilds);
-      }
+      updateUserGuildUI(data);
     } else {
-      // Auto-login to default guild
+      // Auto-connect default guild
       await handleLogin(true);
     }
     loadGuildConfig();
   } catch (err) {
     console.error("Auth check failed:", err);
+  }
+}
+
+function updateUserGuildUI(data) {
+  const guild = data.selectedGuild;
+  const user = data.user;
+
+  document.getElementById("nav-guild-name").innerText = guild.name;
+  document.getElementById("nav-user-label").innerText = `Admin: ${user.username}`;
+  document.getElementById("dash-banner-name").innerText = `Currently Managing: ${guild.name}`;
+  document.getElementById("dash-banner-id").innerText = `Guild ID: ${guild.id}`;
+  document.getElementById("login-guild-id").value = guild.id;
+
+  if (user.avatar) {
+    const iconEl = document.getElementById("nav-guild-icon");
+    if (iconEl) iconEl.innerHTML = `<img src="${user.avatar}" alt="Avatar">`;
+  }
+
+  if (data.guilds && data.guilds.length > 0) {
+    renderGuildSelectorList(data.guilds);
   }
 }
 
@@ -240,22 +255,24 @@ function renderGuildSelectorList(guilds) {
 
   listContainer.style.display = "block";
   itemsContainer.innerHTML = guilds
-    .map((g) => `
-      <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.4); padding:0.6rem 0.8rem; border-radius:8px; border:1px solid rgba(255,42,85,0.2);">
+    .map(
+      (g) => `
+      <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.5); padding:0.6rem 0.8rem; border-radius:10px; border:1px solid rgba(255,42,85,0.25);">
         <div style="display:flex; align-items:center; gap:0.6rem;">
-          <div style="width:28px; height:28px; border-radius:50%; background:#ff2a55; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold;">
-            ${g.icon ? `<img src="${g.icon}" style="width:100%;height:100%;border-radius:50%;">` : g.name.charAt(0)}
+          <div style="width:28px; height:28px; border-radius:50%; background:#ff2a55; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; overflow:hidden;">
+            ${g.icon ? `<img src="${g.icon}" style="width:100%;height:100%;object-fit:cover;">` : g.name.charAt(0)}
           </div>
           <div>
-            <div style="font-weight:600; color:#fff; font-size:0.85rem;">${g.name}</div>
-            <div style="font-size:0.7rem; color:var(--text-muted); font-family:var(--font-mono);">${g.id}</div>
+            <div style="font-weight:700; color:#fff; font-size:0.85rem;">${g.name}</div>
+            <div style="font-size:0.7rem; color:var(--text-dim); font-family:var(--font-mono);">${g.id}</div>
           </div>
         </div>
-        <button onclick="selectGuild('${g.id}')" class="btn-flame-outline" style="padding:0.3rem 0.7rem; font-size:0.75rem;">
+        <button onclick="selectGuild('${g.id}')" class="btn-aura-outline" style="padding:0.3rem 0.7rem; font-size:0.75rem;">
           Manage ⚡
         </button>
       </div>
-    `)
+    `
+    )
     .join("");
 }
 
@@ -270,8 +287,8 @@ async function selectGuild(guildId) {
     if (data.success) {
       currentSelectedGuild = data.selectedGuild;
       document.getElementById("nav-guild-name").innerText = data.selectedGuild.name;
-      document.getElementById("banner-server-title").innerText = `Currently Managing: ${data.selectedGuild.name}`;
-      document.getElementById("banner-server-id").innerText = `Guild ID: ${data.selectedGuild.id}`;
+      document.getElementById("dash-banner-name").innerText = `Currently Managing: ${data.selectedGuild.name}`;
+      document.getElementById("dash-banner-id").innerText = `Guild ID: ${data.selectedGuild.id}`;
       document.getElementById("login-guild-id").value = data.selectedGuild.id;
       closeAuthModal();
       showToast(`🔥 Switched to ${data.selectedGuild.name}!`);
@@ -299,8 +316,8 @@ async function handleLogin(silent = false) {
       currentSelectedGuild = data.selectedGuild;
       document.getElementById("nav-guild-name").innerText = data.selectedGuild.name;
       document.getElementById("nav-user-label").innerText = `Admin: ${data.user.username}`;
-      document.getElementById("banner-server-title").innerText = `Currently Managing: ${data.selectedGuild.name}`;
-      document.getElementById("banner-server-id").innerText = `Guild ID: ${data.selectedGuild.id}`;
+      document.getElementById("dash-banner-name").innerText = `Currently Managing: ${data.selectedGuild.name}`;
+      document.getElementById("dash-banner-id").innerText = `Guild ID: ${data.selectedGuild.id}`;
       closeAuthModal();
       if (!silent) showToast(`🔥 Connected to ${data.selectedGuild.name}!`);
       loadGuildConfig();
@@ -311,13 +328,14 @@ async function handleLogin(silent = false) {
   }
 }
 
-// Load Server Configuration for active server
+// =============================================================================
+// LIVE SERVER CONFIGURATION (READ / WRITE TO DISCORD BOT)
+// =============================================================================
 async function loadGuildConfig() {
   try {
     const res = await fetch("/api/guild/settings");
     const data = await res.json();
 
-    // Fill Greetings form
     if (data.greetings) {
       if (document.getElementById("cfg-welcome-title"))
         document.getElementById("cfg-welcome-title").value = data.greetings.welcomeTitle || "Welcome to {server}!";
@@ -327,7 +345,6 @@ async function loadGuildConfig() {
         document.getElementById("cfg-welcome-color").value = data.greetings.welcomeColor || "#ff2a55";
     }
 
-    // Fill Security toggles
     if (data.security) {
       if (document.getElementById("cfg-toggle-antiraid"))
         document.getElementById("cfg-toggle-antiraid").checked = data.security.antiRaid?.enabled !== false;
@@ -339,7 +356,6 @@ async function loadGuildConfig() {
         document.getElementById("cfg-toggle-lockdown").checked = data.security.activeLockdown === true;
     }
 
-    // Fill Media Fixer toggles
     if (data.media) {
       if (document.getElementById("cfg-media-ig"))
         document.getElementById("cfg-media-ig").checked = data.media.instagram !== false;
@@ -351,13 +367,11 @@ async function loadGuildConfig() {
         document.getElementById("cfg-media-reddit").checked = data.media.reddit !== false;
     }
 
-    // Fill Rules textarea
     if (data.rules && document.getElementById("cfg-rules-textarea")) {
       const rulesArr = Array.isArray(data.rules) ? data.rules : [];
       document.getElementById("cfg-rules-textarea").value = rulesArr.join("\n");
     }
 
-    // Fill Temp Voice
     if (data.tempVoice) {
       if (document.getElementById("cfg-voice-trigger-id"))
         document.getElementById("cfg-voice-trigger-id").value = data.tempVoice.triggerChannelId || "";
@@ -367,7 +381,6 @@ async function loadGuildConfig() {
         document.getElementById("cfg-voice-default-name").value = data.tempVoice.defaultName || "🔊 {user}'s Room";
     }
 
-    // Fill Tickets
     if (data.tickets) {
       if (document.getElementById("cfg-ticket-category-id"))
         document.getElementById("cfg-ticket-category-id").value = data.tickets.categoryId || "";
@@ -377,7 +390,6 @@ async function loadGuildConfig() {
         document.getElementById("cfg-ticket-log-id").value = data.tickets.logChannelId || "";
     }
 
-    // Fill Moderation & Minigames Hub
     if (data.moderation && document.getElementById("cfg-mod-log-id")) {
       document.getElementById("cfg-mod-log-id").value = data.moderation.logChannelId || "";
     }
@@ -392,7 +404,86 @@ async function loadGuildConfig() {
   }
 }
 
-// Save Media Fixer directly to Discord bot database
+async function saveGreetingsConfig() {
+  const welcomeTitle = document.getElementById("cfg-welcome-title").value;
+  const welcomeMessage = document.getElementById("cfg-welcome-msg").value;
+  const welcomeColor = document.getElementById("cfg-welcome-color").value;
+
+  try {
+    const res = await fetch("/api/guild/greetings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ welcomeTitle, welcomeMessage, welcomeColor }),
+    });
+    const data = await res.json();
+    if (data.success) showToast("✅ Welcome announcement saved to server!");
+  } catch (err) {
+    console.error("Save greetings error:", err);
+  }
+}
+
+async function saveSecurityConfig() {
+  const antiRaid = document.getElementById("cfg-toggle-antiraid").checked;
+  const antiNuke = document.getElementById("cfg-toggle-antinuke").checked;
+  const antiSpam = document.getElementById("cfg-toggle-antispam").checked;
+  const activeLockdown = document.getElementById("cfg-toggle-lockdown").checked;
+
+  try {
+    const res = await fetch("/api/guild/security", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        antiRaid: { enabled: antiRaid, joinThreshold: 5, action: "lockdown" },
+        antiNuke: { enabled: antiNuke, maxChannelDeletes: 2, maxRoleDeletes: 2 },
+        antiSpam: { enabled: antiSpam, maxMentions: 4, maxMessagesPerWindow: 5 },
+        activeLockdown,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(activeLockdown ? "🚨 SERVER LOCKDOWN ACTIVATED!" : "🛡️ Security settings updated in Discord!");
+    }
+  } catch (err) {
+    console.error("Save security error:", err);
+  }
+}
+
+async function saveTempVoiceConfig() {
+  const triggerChannelId = document.getElementById("cfg-voice-trigger-id").value.trim();
+  const categoryId = document.getElementById("cfg-voice-category-id").value.trim();
+  const defaultName = document.getElementById("cfg-voice-default-name").value.trim();
+
+  try {
+    const res = await fetch("/api/guild/temp-voice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ triggerChannelId, categoryId, defaultName }),
+    });
+    const data = await res.json();
+    if (data.success) showToast("🔊 Temp voice generator configuration saved!");
+  } catch (err) {
+    console.error("Save voice error:", err);
+  }
+}
+
+async function saveTicketsConfig() {
+  const categoryId = document.getElementById("cfg-ticket-category-id").value.trim();
+  const staffRoleIds = document.getElementById("cfg-ticket-staff-roles").value.trim();
+  const logChannelId = document.getElementById("cfg-ticket-log-id").value.trim();
+
+  try {
+    const res = await fetch("/api/guild/tickets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ categoryId, staffRoleIds, logChannelId }),
+    });
+    const data = await res.json();
+    if (data.success) showToast("🎫 Support ticket settings saved!");
+  } catch (err) {
+    console.error("Save tickets error:", err);
+  }
+}
+
 async function saveMediaSettings() {
   const instagram = document.getElementById("cfg-media-ig").checked;
   const tiktok = document.getElementById("cfg-media-tiktok").checked;
@@ -406,15 +497,12 @@ async function saveMediaSettings() {
       body: JSON.stringify({ instagram, tiktok, twitter, reddit, enabled: true }),
     });
     const data = await res.json();
-    if (data.success) {
-      showToast("🎥 Media Link-to-Video settings saved!");
-    }
+    if (data.success) showToast("🎥 Media Fixer video links saved!");
   } catch (err) {
-    console.error("Failed to save media settings:", err);
+    console.error("Save media error:", err);
   }
 }
 
-// Save Rules directly to Discord bot database
 async function saveRulesConfig() {
   const text = document.getElementById("cfg-rules-textarea").value;
   try {
@@ -424,57 +512,12 @@ async function saveRulesConfig() {
       body: JSON.stringify({ rules: text }),
     });
     const data = await res.json();
-    if (data.success) {
-      showToast("📜 Server rules published directly to Discord bot!");
-    }
+    if (data.success) showToast("📜 Server rules published to Discord!");
   } catch (err) {
-    console.error("Failed to save rules:", err);
+    console.error("Save rules error:", err);
   }
 }
 
-// Save Temp Voice directly to Discord bot database
-async function saveTempVoiceConfig() {
-  const triggerChannelId = document.getElementById("cfg-voice-trigger-id").value.trim();
-  const categoryId = document.getElementById("cfg-voice-category-id").value.trim();
-  const defaultName = document.getElementById("cfg-voice-default-name").value.trim();
-
-  try {
-    const res = await fetch("/api/guild/temp-voice", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ triggerChannelId, categoryId, defaultName }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast("🔊 Temp voice generator configuration saved!");
-    }
-  } catch (err) {
-    console.error("Failed to save voice config:", err);
-  }
-}
-
-// Save Support Tickets directly to Discord bot database
-async function saveTicketsConfig() {
-  const categoryId = document.getElementById("cfg-ticket-category-id").value.trim();
-  const staffRoleIds = document.getElementById("cfg-ticket-staff-roles").value.trim();
-  const logChannelId = document.getElementById("cfg-ticket-log-id").value.trim();
-
-  try {
-    const res = await fetch("/api/guild/tickets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categoryId, staffRoleIds, logChannelId }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast("🎫 Support ticket settings saved!");
-    }
-  } catch (err) {
-    console.error("Failed to save ticket config:", err);
-  }
-}
-
-// Save Mod Log & Minigame Channels directly to Discord bot database
 async function saveChannelsHubConfig() {
   const modLogId = document.getElementById("cfg-mod-log-id").value.trim();
   const countingId = document.getElementById("cfg-counting-channel-id").value.trim();
@@ -502,76 +545,30 @@ async function saveChannelsHubConfig() {
         body: JSON.stringify({ announcementChannelId: levelsId }),
       });
     }
-    showToast("🛡️ Audit log and game channels saved!");
+    showToast("📡 Audit log and minigame channels saved!");
   } catch (err) {
-    console.error("Failed to save channels config:", err);
+    console.error("Save channels error:", err);
   }
 }
 
-// Save Greetings directly to Discord bot database
-async function saveGreetingsConfig() {
-  const welcomeTitle = document.getElementById("cfg-welcome-title").value;
-  const welcomeMessage = document.getElementById("cfg-welcome-msg").value;
-  const welcomeColor = document.getElementById("cfg-welcome-color").value;
-
-  try {
-    const res = await fetch("/api/guild/greetings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ welcomeTitle, welcomeMessage, welcomeColor }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast("✅ Welcome Announcement saved to Discord server!");
-    }
-  } catch (err) {
-    console.error("Failed to save greetings:", err);
-  }
-}
-
-// Save Security & Lockdown directly to Discord bot database
-async function saveSecurityConfig() {
-  const antiRaidEnabled = document.getElementById("cfg-toggle-antiraid").checked;
-  const antiNukeEnabled = document.getElementById("cfg-toggle-antinuke").checked;
-  const antiSpamEnabled = document.getElementById("cfg-toggle-antispam").checked;
-  const activeLockdown = document.getElementById("cfg-toggle-lockdown").checked;
-
-  try {
-    const res = await fetch("/api/guild/security", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        antiRaid: { enabled: antiRaidEnabled, joinThreshold: 5, action: "lockdown" },
-        antiNuke: { enabled: antiNukeEnabled, maxChannelDeletes: 2, maxRoleDeletes: 2 },
-        antiSpam: { enabled: antiSpamEnabled, maxMentions: 4, maxMessagesPerWindow: 5 },
-        activeLockdown,
-      }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast(activeLockdown ? "🚨 SERVER LOCKDOWN ACTIVATED!" : "🛡️ Security settings updated in Discord!");
-    }
-  } catch (err) {
-    console.error("Failed to save security:", err);
-  }
-}
-
-// Load Leaderboards with Usernames and Avatars
+// =============================================================================
+// XP LEADERBOARD
+// =============================================================================
 async function loadLeaderboard() {
-  const tableBody = document.getElementById("leaderboard-body");
-  if (!tableBody) return;
+  const tbody = document.getElementById("leaderboard-body");
+  if (!tbody) return;
 
   try {
     const res = await fetch("/api/levels");
     const data = await res.json();
 
     if (data.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem;">No ranked members recorded for this server yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:2rem;">No ranked members recorded for this server yet.</td></tr>`;
       return;
     }
 
-    tableBody.innerHTML = data
-      .map((user, idx) => {
+    tbody.innerHTML = data
+      .map((u, idx) => {
         let badgeClass = "rank-other";
         if (idx === 0) badgeClass = "rank-1";
         else if (idx === 1) badgeClass = "rank-2";
@@ -582,16 +579,16 @@ async function loadLeaderboard() {
           <td><span class="rank-badge ${badgeClass}">#${idx + 1}</span></td>
           <td>
             <div class="leaderboard-user-cell">
-              <img src="${user.avatar}" class="leaderboard-avatar" alt="Avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
-              <div class="leaderboard-names">
-                <span class="leaderboard-username">${user.username}</span>
-                <span class="leaderboard-userid">ID: ${user.userId}</span>
+              <img src="${u.avatar}" class="leaderboard-avatar" alt="Avatar" onerror="this.src='aura-logo.png'">
+              <div>
+                <strong style="color:#fff; display:block; font-size:0.95rem;">${u.username}</strong>
+                <span style="color:var(--text-dim); font-size:0.75rem; font-family:var(--font-mono);">ID: ${u.userId}</span>
               </div>
             </div>
           </td>
-          <td><strong style="color:#ff4d6d;">Level ${user.level}</strong></td>
-          <td style="color:#c77dff; font-weight:600;">${(user.xp || 0).toLocaleString()} XP</td>
-          <td style="color:var(--text-muted);">${user.messages || 0}</td>
+          <td><strong style="color:#ff3366;">Level ${u.level}</strong></td>
+          <td style="color:#c77dff; font-weight:700;">${(u.xp || 0).toLocaleString()} XP</td>
+          <td style="color:var(--text-muted);">${u.messages || 0}</td>
         </tr>
       `;
       })
@@ -601,48 +598,21 @@ async function loadLeaderboard() {
   }
 }
 
-// Load Overview Metrics
-async function loadOverview() {
-  try {
-    const res = await fetch("/api/overview");
-    const data = await res.json();
-
-    document.getElementById("metric-servers").innerText = data.stats.guildsConfigured || "2";
-    document.getElementById("metric-members").innerText = (data.stats.membersTracked || 250).toLocaleString();
-    document.getElementById("metric-commands").innerText = data.stats.totalCommands || "30";
-    document.getElementById("metric-tickets").innerText = data.stats.activeTicketsPanels || "1";
-
-    const featureContainer = document.getElementById("feature-grid-target");
-    if (featureContainer && data.features) {
-      featureContainer.innerHTML = data.features
-        .map(
-          (f) => `
-        <div class="feature-box">
-          <div class="feature-box-top">
-            <h4 style="color:#fff;font-weight:700;">${f.name}</h4>
-            <span class="feature-badge">${f.status}</span>
-          </div>
-          <p style="color:var(--text-muted);font-size:0.85rem;">System Shield: <span style="color:#ff758f;font-weight:600;">${f.level}</span></p>
-        </div>
-      `
-        )
-        .join("");
-    }
-  } catch (err) {
-    console.error("Failed to load overview data:", err);
-  }
-}
-
-// Command Catalog
+// =============================================================================
+// COMMANDS CATALOG (30 COMMANDS)
+// =============================================================================
 let allCommands = [];
 
 async function loadCommands() {
+  const container = document.getElementById("commands-container");
+  if (!container) return;
+
   try {
     const res = await fetch("/api/commands");
     allCommands = await res.json();
     renderCommands(allCommands);
   } catch (err) {
-    console.error("Failed to load commands:", err);
+    console.error("Commands load failed:", err);
   }
 }
 
@@ -651,29 +621,29 @@ function renderCommands(list) {
   if (!container) return;
 
   if (list.length === 0) {
-    container.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;text-align:center;">No flames matched your query.</p>`;
+    container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:2rem;">No matching commands found.</p>`;
     return;
   }
 
   container.innerHTML = list
     .map(
-      (cmd) => `
-    <div class="cmd-card">
+      (c) => `
+    <div class="command-item-card">
       <div class="cmd-header">
-        <span class="cmd-name">${cmd.name}</span>
-        <span class="cmd-cat">${cmd.cat}</span>
+        <span class="cmd-title">${c.name}</span>
+        <span class="cmd-badge">${c.cat}</span>
       </div>
-      <p class="cmd-desc">${cmd.desc}</p>
-      <div class="cmd-options"><code>${cmd.options}</code></div>
+      <p class="cmd-desc">${c.desc}</p>
+      <div class="cmd-syntax"><code>${c.options}</code></div>
     </div>
   `
     )
     .join("");
 }
 
-const searchInput = document.getElementById("cmd-search");
-if (searchInput) {
-  searchInput.addEventListener("input", (e) => {
+const cmdSearch = document.getElementById("cmd-search");
+if (cmdSearch) {
+  cmdSearch.addEventListener("input", (e) => {
     const val = e.target.value.toLowerCase();
     const filtered = allCommands.filter(
       (c) => c.name.toLowerCase().includes(val) || c.desc.toLowerCase().includes(val) || c.cat.toLowerCase().includes(val)
@@ -682,75 +652,66 @@ if (searchInput) {
   });
 }
 
-const filterPills = document.querySelectorAll(".pill-btn");
-filterPills.forEach((pill) => {
+document.querySelectorAll(".cat-pill-btn").forEach((pill) => {
   pill.addEventListener("click", () => {
-    filterPills.forEach((p) => p.classList.remove("active"));
+    document.querySelectorAll(".cat-pill-btn").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
     const cat = pill.dataset.cat;
-    if (cat === "all") {
-      renderCommands(allCommands);
-    } else {
-      renderCommands(allCommands.filter((c) => c.cat.toLowerCase() === cat.toLowerCase()));
-    }
+    if (cat === "all") renderCommands(allCommands);
+    else renderCommands(allCommands.filter((c) => c.cat.toLowerCase() === cat.toLowerCase()));
   });
 });
 
-// Interactive Discord Embed Preview
-const titleInput = document.getElementById("embed-title-input");
-const descInput = document.getElementById("embed-desc-input");
-const colorInput = document.getElementById("embed-color-input");
+// Embed Studio Live Preview
+const embedTitleInput = document.getElementById("embed-title-input");
+const embedDescInput = document.getElementById("embed-desc-input");
+const embedColorInput = document.getElementById("embed-color-input");
 
 const previewTitle = document.getElementById("preview-title");
 const previewDesc = document.getElementById("preview-desc");
 const previewCard = document.getElementById("preview-card");
 
-function updatePreview() {
-  if (titleInput && previewTitle) {
-    previewTitle.innerText = titleInput.value || "AURA Embedded Broadcast";
-  }
-  if (descInput && previewDesc) {
-    previewDesc.innerText = descInput.value || "Preview text will render in real-time as you type.";
-  }
-  if (colorInput && previewCard) {
-    previewCard.style.borderLeftColor = colorInput.value;
+function updateEmbedPreview() {
+  if (embedTitleInput && previewTitle) previewTitle.innerText = embedTitleInput.value || "AURA Announcement";
+  if (embedDescInput && previewDesc) previewDesc.innerText = embedDescInput.value || "Preview text will render in real time.";
+  if (embedColorInput && previewCard) previewCard.style.borderLeftColor = embedColorInput.value;
+}
+
+if (embedTitleInput) embedTitleInput.addEventListener("input", updateEmbedPreview);
+if (embedDescInput) embedDescInput.addEventListener("input", updateEmbedPreview);
+if (embedColorInput) embedColorInput.addEventListener("input", updateEmbedPreview);
+
+// Overview Metrics
+async function loadOverview() {
+  try {
+    const res = await fetch("/api/overview");
+    const data = await res.json();
+    if (document.getElementById("stat-servers"))
+      document.getElementById("stat-servers").innerText = data.stats.guildsConfigured || "2";
+    if (document.getElementById("stat-members"))
+      document.getElementById("stat-members").innerText = (data.stats.membersTracked || 250).toLocaleString();
+    if (document.getElementById("stat-commands"))
+      document.getElementById("stat-commands").innerText = data.stats.totalCommands || "30";
+  } catch (err) {
+    console.error("Overview error:", err);
   }
 }
 
-if (titleInput) titleInput.addEventListener("input", updatePreview);
-if (descInput) descInput.addEventListener("input", updatePreview);
-if (colorInput) colorInput.addEventListener("input", updatePreview);
-
-// Initial Route Resolver
-function initRoute() {
+// Initial Route Resolution on Page Load
+function initPage() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("error")) {
     const err = params.get("error");
-    if (err === "oauth_not_configured") {
-      showToast("⚠️ Add CLIENT_SECRET to Render/Environment for Discord OAuth2.");
-    } else if (err === "oauth_failed") {
-      showToast("❌ Discord OAuth2 login failed. Please try again.");
-    }
+    if (err === "oauth_not_configured") showToast("⚠️ Configure CLIENT_SECRET in Render for Discord OAuth2.");
+    else if (err === "oauth_failed") showToast("❌ Discord OAuth2 failed. Please try again.");
   }
 
-  // Check URL path first, then fallback to hash or default to overview
   const currentPath = window.location.pathname;
-  let targetTab = routeTabMap[currentPath];
-  if (!targetTab && window.location.hash) {
-    const hash = window.location.hash.replace("#", "");
-    if (tabRouteMap[hash]) {
-      targetTab = hash;
-    }
-  }
+  const initialView = urlViewMap[currentPath] || (window.location.hash ? window.location.hash.replace("#", "") : "home");
+  navigateTo(initialView, null, false);
 
-  if (targetTab && targetTab !== "overview") {
-    switchTab(targetTab, false);
-  }
+  checkAuth();
+  loadOverview();
 }
 
-// Initialize
-initRoute();
-checkAuth();
-loadOverview();
-loadCommands();
-loadLeaderboard();
+initPage();
