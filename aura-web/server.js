@@ -93,6 +93,116 @@ async function addDiscordMessageReaction(channelId, messageId, emoji) {
   }
 }
 
+async function deleteDiscordMessage(channelId, messageId) {
+  if (!DISCORD_BOT_TOKEN || !channelId || !messageId) return false;
+  try {
+    await axios.delete(
+      `https://discord.com/api/v10/channels/${channelId}/messages/${messageId}`,
+      {
+        headers: {
+          Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
+        },
+      }
+    );
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+const MONTH_NAMES = {
+  jan: 1, january: 1,
+  feb: 2, february: 2,
+  mar: 3, march: 3,
+  apr: 4, april: 4,
+  may: 5,
+  jun: 6, june: 6,
+  jul: 7, july: 7,
+  aug: 8, august: 8,
+  sep: 9, sept: 9, september: 9,
+  oct: 10, october: 10,
+  nov: 11, november: 11,
+  dec: 12, december: 12,
+};
+
+function parseBirthday(input) {
+  if (!input || typeof input !== "string") {
+    return { valid: false, error: "Empty input" };
+  }
+  let cleaned = input
+    .trim()
+    .replace(/[`*~_()\[\]]/g, "")
+    .replace(/^(my\s+)?(birthday|bday|dob)(\s+is|\s*:)?\s*/i, "")
+    .replace(/^(born\s+on|born)\s*:?\s*/i, "")
+    .trim()
+    .replace(/(\d{1,2})(st|nd|rd|th)\b/gi, "$1");
+
+  const currentYear = new Date().getFullYear();
+
+  const monthNameMatch1 = /^(\d{1,2})[\s\-/\.]*([a-zA-Z]+)(?:[\s\-/\.]+(\d{2,4}))?$/.exec(cleaned);
+  const monthNameMatch2 = /^([a-zA-Z]+)[\s\-/\.]*(\d{1,2})(?:[\s\-/\.]+(\d{2,4}))?$/.exec(cleaned);
+  if (monthNameMatch1 || monthNameMatch2) {
+    const rawDay = monthNameMatch1 ? monthNameMatch1[1] : monthNameMatch2[2];
+    const rawMonthStr = (monthNameMatch1 ? monthNameMatch1[2] : monthNameMatch2[1]).toLowerCase();
+    const rawYear = monthNameMatch1 ? monthNameMatch1[3] : monthNameMatch2[3];
+    const monthNum = MONTH_NAMES[rawMonthStr];
+    if (monthNum) {
+      let day = parseInt(rawDay, 10);
+      let year = null;
+      if (rawYear) {
+        year = parseInt(rawYear, 10);
+        if (year < 100) year = year < 30 ? 2000 + year : 1900 + year;
+      }
+      return validateAndBuildBirthday(day, monthNum, year, currentYear);
+    }
+  }
+
+  const isoMatch = /^(\d{4})[\s\-/\.]+(\d{1,2})[\s\-/\.]+(\d{1,2})$/.exec(cleaned);
+  if (isoMatch) {
+    return validateAndBuildBirthday(parseInt(isoMatch[3], 10), parseInt(isoMatch[2], 10), parseInt(isoMatch[1], 10), currentYear);
+  }
+
+  const fullNumericMatch = /^(\d{1,2})[\s\-/\.]+(\d{1,2})[\s\-/\.]+(\d{2,4})$/.exec(cleaned);
+  if (fullNumericMatch) {
+    let year = parseInt(fullNumericMatch[3], 10);
+    if (year < 100) year = year < 30 ? 2000 + year : 1900 + year;
+    return validateAndBuildBirthday(parseInt(fullNumericMatch[1], 10), parseInt(fullNumericMatch[2], 10), year, currentYear);
+  }
+
+  const shortNumericMatch = /^(\d{1,2})[\s\-/\.]+(\d{1,2})$/.exec(cleaned);
+  if (shortNumericMatch) {
+    return validateAndBuildBirthday(parseInt(shortNumericMatch[1], 10), parseInt(shortNumericMatch[2], 10), null, currentYear);
+  }
+
+  return { valid: false, error: "Unrecognized format" };
+}
+
+function validateAndBuildBirthday(day, month, year, currentYear) {
+  if (month < 1 || month > 12) return { valid: false };
+  if (day < 1 || day > 31) return { valid: false };
+  if (year !== null) {
+    if (year < 1910 || year > currentYear) return { valid: false };
+    const d = new Date(Date.UTC(year, month - 1, day));
+    if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) return { valid: false };
+    return {
+      valid: true,
+      day,
+      month,
+      year,
+      formatted: `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`,
+    };
+  }
+  const d = new Date(Date.UTC(2024, month - 1, day));
+  if (d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) return { valid: false };
+  return {
+    valid: true,
+    day,
+    month,
+    year: null,
+    formatted: `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}`,
+  };
+}
+
 // -----------------------------------------------------------------------------
 // AUTHENTICATION & MULTI-GUILD MANAGEMENT
 // -----------------------------------------------------------------------------
@@ -636,6 +746,11 @@ app.post("/api/guild/sticky", async (req, res) => {
   const stickyStore = readBotData("sticky-messages.json", {});
   const key = `${guildId}:${channelId}`;
 
+  // If a previous sticky message exists for this channel, delete it first via Discord REST API
+  if (stickyStore[key]?.messageId) {
+    await deleteDiscordMessage(channelId, stickyStore[key].messageId);
+  }
+
   let discordMsg = null;
   if (asEmbed) {
     const hexColor = color ? parseInt(color.replace("#", ""), 16) : 0xff2a55;
@@ -660,7 +775,7 @@ app.post("/api/guild/sticky", async (req, res) => {
     asEmbed: Boolean(asEmbed),
     title: title || null,
     color: color || null,
-    messageId: discordMsg ? discordMsg.id : (stickyStore[key]?.messageId || null),
+    messageId: discordMsg ? discordMsg.id : null,
   };
 
   writeBotData("sticky-messages.json", stickyStore);
@@ -685,12 +800,15 @@ app.get("/api/guild/stickies", (req, res) => {
   res.json({ stickies: list });
 });
 
-app.delete("/api/guild/sticky/:channelId", (req, res) => {
+app.delete("/api/guild/sticky/:channelId", async (req, res) => {
   const guildId = req.session?.selectedGuild?.id || req.query.guildId || "1547837282109624462";
   const { channelId } = req.params;
   const stickyStore = readBotData("sticky-messages.json", {});
   const key = `${guildId}:${channelId}`;
   if (stickyStore[key]) {
+    if (stickyStore[key].messageId) {
+      await deleteDiscordMessage(channelId, stickyStore[key].messageId);
+    }
     delete stickyStore[key];
     writeBotData("sticky-messages.json", stickyStore);
     return res.json({ success: true, message: "Sticky message removed from channel." });
@@ -749,9 +867,10 @@ app.get("/api/guild/birthdays", (req, res) => {
 
   function getDaysUntil(dateText) {
     if (!dateText) return 999;
-    const parts = dateText.split("/");
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
+    const parsed = parseBirthday(dateText);
+    if (!parsed.valid) return 999;
+    const day = parsed.day;
+    const month = parsed.month;
     let bday = new Date(currentYear, month - 1, day);
     if (bday < now && bday.toDateString() !== now.toDateString()) {
       bday = new Date(currentYear + 1, month - 1, day);
@@ -806,15 +925,20 @@ app.post("/api/guild/birthdays/add", (req, res) => {
     return res.status(400).json({ error: "User ID and Date (DD/MM) are required." });
   }
 
+  const parsed = parseBirthday(date);
+  if (!parsed.valid) {
+    return res.status(400).json({ error: "Invalid date format. Use DD/MM (e.g. 24/05), DD/MM/YYYY (e.g. 24/05/2004), or month names (e.g. 24 May)." });
+  }
+
   const birthdayStore = readBotData("birthdays.json", { settings: {}, birthdays: {} });
   birthdayStore.birthdays = birthdayStore.birthdays || {};
   birthdayStore.birthdays[guildId] = birthdayStore.birthdays[guildId] || {};
   birthdayStore.birthdays[guildId][userId] = {
-    date: date.trim(),
+    date: parsed.formatted,
     lastAnnouncedYear: null,
   };
   writeBotData("birthdays.json", birthdayStore);
-  res.json({ success: true, message: `Birthday for <@${userId}> saved as ${date}!` });
+  res.json({ success: true, message: `Birthday for <@${userId}> saved as ${parsed.formatted}!` });
 });
 
 app.delete("/api/guild/birthdays/:userId", (req, res) => {
@@ -840,15 +964,15 @@ app.get("/api/guild/birthdays/user/:userId", (req, res) => {
   }
 
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const parts = bday.date.split("/");
-  const day = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10);
-  let nextBday = new Date(currentYear, month - 1, day);
-  if (nextBday < now && nextBday.toDateString() !== now.toDateString()) {
-    nextBday = new Date(currentYear + 1, month - 1, day);
+  const parsed = parseBirthday(bday.date);
+  let daysUntil = 999;
+  if (parsed.valid) {
+    let nextBday = new Date(currentYear, parsed.month - 1, parsed.day);
+    if (nextBday < now && nextBday.toDateString() !== now.toDateString()) {
+      nextBday = new Date(currentYear + 1, parsed.month - 1, parsed.day);
+    }
+    daysUntil = Math.ceil((nextBday - now) / (1000 * 60 * 60 * 24));
   }
-  const daysUntil = Math.ceil((nextBday - now) / (1000 * 60 * 60 * 24));
 
   res.json({
     userId,
@@ -951,6 +1075,14 @@ app.post("/api/guild/levels", (req, res) => {
   res.json({ success: true, message: "Level celebration channel & rewards saved!", levelSettings: levelData.settings[guildId] });
 });
 
+function calculateLevelFromXp(xp) {
+  let level = 0;
+  while (xp >= 50 * (level + 1) * (level + 2)) {
+    level++;
+  }
+  return level;
+}
+
 // LEVEL MANAGEMENT ACTIONS (/level add-xp, remove-xp, set-level, reset, reset-all)
 app.post("/api/guild/levels/add-xp", (req, res) => {
   const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
@@ -964,7 +1096,7 @@ app.post("/api/guild/levels/add-xp", (req, res) => {
   levelData.users[guildId] = levelData.users[guildId] || {};
   const current = levelData.users[guildId][userId] || { xp: 0, level: 0, messages: 0 };
   current.xp = (current.xp || 0) + num;
-  current.level = Math.floor(Math.sqrt(current.xp / 50)) || 1;
+  current.level = calculateLevelFromXp(current.xp);
   levelData.users[guildId][userId] = current;
   writeBotData("level-data.json", levelData);
 
@@ -983,7 +1115,7 @@ app.post("/api/guild/levels/remove-xp", (req, res) => {
   levelData.users[guildId] = levelData.users[guildId] || {};
   const current = levelData.users[guildId][userId] || { xp: 0, level: 0, messages: 0 };
   current.xp = Math.max(0, (current.xp || 0) - num);
-  current.level = Math.floor(Math.sqrt(current.xp / 50)) || 1;
+  current.level = calculateLevelFromXp(current.xp);
   levelData.users[guildId][userId] = current;
   writeBotData("level-data.json", levelData);
 

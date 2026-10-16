@@ -18,6 +18,7 @@ let syncInterval = null;
 
 // In-memory hot cache for instant synchronous reads
 const memoryCache = new Map();
+const lastLocalWriteTime = new Map();
 
 // All tracked data files
 const TRACKED_FILES = [
@@ -121,69 +122,32 @@ async function initDatabase() {
   }
 }
 
-function mergeWithLocal(fileName, cloudData, localData) {
-  if (!localData) return cloudData;
-  if (!cloudData) return localData;
-
-  if (fileName === "birthdays.json") {
-    const merged = {
-      settings: { ...(cloudData.settings || {}), ...(localData.settings || {}) },
-      birthdays: {},
-    };
-    const guilds = new Set([
-      ...Object.keys(cloudData.birthdays || {}),
-      ...Object.keys(localData.birthdays || {}),
-    ]);
-    for (const g of guilds) {
-      merged.birthdays[g] = {
-        ...(cloudData.birthdays?.[g] || {}),
-        ...(localData.birthdays?.[g] || {}),
-      };
-    }
-    return merged;
-  }
-
-  if (fileName === "level-data.json") {
-    const merged = {
-      settings: { ...(cloudData.settings || {}), ...(localData.settings || {}) },
-      users: {},
-    };
-    const guilds = new Set([
-      ...Object.keys(cloudData.users || {}),
-      ...Object.keys(localData.users || {}),
-    ]);
-    for (const g of guilds) {
-      merged.users[g] = {
-        ...(cloudData.users?.[g] || {}),
-        ...(localData.users?.[g] || {}),
-      };
-    }
-    return merged;
-  }
-
-  return cloudData !== undefined ? cloudData : localData;
-}
-
 async function pullAllFromDb() {
   if (!isConnected || !collection) return;
   try {
     const docs = await collection.find({}).toArray();
     for (const doc of docs) {
       if (doc._id && doc.data !== undefined) {
-        const local = readLocalFile(doc._id, null);
-        const merged = mergeWithLocal(doc._id, doc.data, local);
-        memoryCache.set(doc._id, merged);
-        writeLocalFile(doc._id, merged);
+        const localTime = lastLocalWriteTime.get(doc._id) || 0;
+        const docTime = doc.updatedAt ? new Date(doc.updatedAt).getTime() : 0;
 
-        // If local had extra data not in cloud, sync merged back to cloud
-        if (JSON.stringify(merged) !== JSON.stringify(doc.data)) {
-          collection
-            .updateOne(
-              { _id: doc._id },
-              { $set: { data: merged, updatedAt: new Date() } },
-              { upsert: true }
-            )
-            .catch(() => {});
+        // If cloud data is newer than local write, accept cloud changes
+        if (docTime > localTime || !localTime) {
+          memoryCache.set(doc._id, doc.data);
+          writeLocalFile(doc._id, doc.data);
+          lastLocalWriteTime.set(doc._id, docTime || Date.now());
+        } else if (localTime > docTime) {
+          // Local changes are newer, sync back to cloud
+          const current = getData(doc._id, null);
+          if (current !== null) {
+            collection
+              .updateOne(
+                { _id: doc._id },
+                { $set: { data: current, updatedAt: new Date(localTime) } },
+                { upsert: true }
+              )
+              .catch(() => {});
+          }
         }
       }
     }
@@ -224,6 +188,8 @@ function getData(fileName, fallback) {
 }
 
 function setData(fileName, data) {
+  const now = Date.now();
+  lastLocalWriteTime.set(fileName, now);
   memoryCache.set(fileName, data);
   writeLocalFile(fileName, data);
 
@@ -232,7 +198,7 @@ function setData(fileName, data) {
     collection
       .updateOne(
         { _id: fileName },
-        { $set: { data, updatedAt: new Date() } },
+        { $set: { data, updatedAt: new Date(now) } },
         { upsert: true }
       )
       .catch((err) => {

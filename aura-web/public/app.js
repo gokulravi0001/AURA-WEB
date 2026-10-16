@@ -750,6 +750,7 @@ async function saveStickyConfig() {
     const data = await res.json();
     if (data.success) {
       showToast(data.message || "📌 Sticky message active and synced!");
+      loadActiveStickies();
     } else {
       showToast(`❌ Error: ${data.error || "Failed to set sticky."}`);
     }
@@ -1338,6 +1339,8 @@ async function deleteBirthday(userId) {
     if (data.success) {
       showToast("🗑️ Birthday removed.");
       loadBirthdays(bdayCurrentPage);
+      const resBox = document.getElementById("bday-lookup-result");
+      if (resBox) resBox.style.display = "none";
     }
   } catch (err) {
     showToast("❌ Could not remove birthday.");

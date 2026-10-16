@@ -15,6 +15,7 @@ const {
   setBirthday,
   saveBirthdaySettings,
   removeBirthday,
+  parseBirthday,
   isValidBirthday,
   formatBirthdayString,
 } = require("../features/birthdays");
@@ -111,18 +112,18 @@ module.exports = {
 
     if (subcommand === "set") {
       const rawDate = interaction.options.getString("date", true);
-      if (!isValidBirthday(rawDate)) {
+      const parsed = parseBirthday(rawDate);
+      if (!parsed.valid) {
         return interaction.reply({
-          content: "❌ Invalid date format. Please use `DD/MM` (e.g. `24/05`) or `DD/MM/YYYY` (e.g. `24/05/2004`).",
+          content: "❌ Invalid date format. Please use `DD/MM` (e.g. `24/05`), `DD/MM/YYYY` (e.g. `24/05/2004`), or month names (e.g. `24 May`).",
           flags: MessageFlags.Ephemeral,
         });
       }
 
-      const formatted = formatBirthdayString(rawDate);
-      setBirthday(interaction.guild.id, interaction.user.id, formatted);
+      setBirthday(interaction.guild.id, interaction.user.id, parsed.formatted);
 
       return interaction.reply({
-        content: `🎂 Your birthday has been saved as **${formatted}**! We'll celebrate when the day arrives.`,
+        content: `🎂 Your birthday has been saved as **${parsed.formatted}**! We'll celebrate when the day arrives.`,
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -291,13 +292,20 @@ module.exports = {
         birthdayRoleId: role ? role.id : null,
       });
 
+      const botMember = interaction.guild.members.me;
+      const canManageMessages = subChannel.permissionsFor(botMember)?.has(PermissionFlagsBits.ManageMessages);
+      const permNotice = canManageMessages
+        ? "✨ AURA has Manage Messages permission to automatically clean member date submissions."
+        : `⚠️ **Important**: Please grant AURA **Manage Messages** permission in ${subChannel} so member date submissions can be automatically deleted after saving!`;
+
       return interaction.reply({
         content:
           `✅ **Birthday System Configured**\n` +
           `• Submission Channel: ${subChannel}\n` +
           `• Announcement Channel: ${annChannel}\n` +
           `• Birthday Role: ${role ? `${role}` : "None"}\n` +
-          `Members can submit their date in ${subChannel} or via \`/birthday set\`!`,
+          `• ${permNotice}\n\n` +
+          `Members can now submit their date in ${subChannel} or via \`/birthday set\`!`,
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -305,19 +313,19 @@ module.exports = {
     if (subcommand === "set-user") {
       const targetUser = interaction.options.getUser("member", true);
       const rawDate = interaction.options.getString("date", true);
+      const parsed = parseBirthday(rawDate);
 
-      if (!isValidBirthday(rawDate)) {
+      if (!parsed.valid) {
         return interaction.reply({
-          content: "❌ Invalid date format. Use `DD/MM` or `DD/MM/YYYY`.",
+          content: "❌ Invalid date format. Use `DD/MM` (e.g. `24/05`), `DD/MM/YYYY` (e.g. `24/05/2004`), or month names (e.g. `24 May`).",
           flags: MessageFlags.Ephemeral,
         });
       }
 
-      const formatted = formatBirthdayString(rawDate);
-      setBirthday(interaction.guild.id, targetUser.id, formatted);
+      setBirthday(interaction.guild.id, targetUser.id, parsed.formatted);
 
       return interaction.reply({
-        content: `✅ Saved birthday for ${targetUser} as **${formatted}**.`,
+        content: `✅ Saved birthday for ${targetUser} as **${parsed.formatted}**.`,
         flags: MessageFlags.Ephemeral,
       });
     }

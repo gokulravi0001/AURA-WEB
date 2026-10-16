@@ -69,56 +69,12 @@ async function initDatabase() {
 
     console.log(`🔥 Central Database Connected on Render: MongoDB [${db.databaseName}]`);
 
-function mergeWithLocal(fileName, cloudData, localData) {
-  if (!localData) return cloudData;
-  if (!cloudData) return localData;
-
-  if (fileName === "birthdays.json") {
-    const merged = {
-      settings: { ...(cloudData.settings || {}), ...(localData.settings || {}) },
-      birthdays: {},
-    };
-    const guilds = new Set([
-      ...Object.keys(cloudData.birthdays || {}),
-      ...Object.keys(localData.birthdays || {}),
-    ]);
-    for (const g of guilds) {
-      merged.birthdays[g] = {
-        ...(cloudData.birthdays?.[g] || {}),
-        ...(localData.birthdays?.[g] || {}),
-      };
-    }
-    return merged;
-  }
-
-  if (fileName === "level-data.json") {
-    const merged = {
-      settings: { ...(cloudData.settings || {}), ...(localData.settings || {}) },
-      users: {},
-    };
-    const guilds = new Set([
-      ...Object.keys(cloudData.users || {}),
-      ...Object.keys(localData.users || {}),
-    ]);
-    for (const g of guilds) {
-      merged.users[g] = {
-        ...(cloudData.users?.[g] || {}),
-        ...(localData.users?.[g] || {}),
-      };
-    }
-    return merged;
-  }
-
-  return cloudData !== undefined ? cloudData : localData;
-}
-
-    // Preload docs from MongoDB into cache
+    // Preload docs from MongoDB into cache directly
     const docs = await collection.find({}).toArray();
     for (const doc of docs) {
       if (doc._id && doc.data !== undefined) {
-        const local = readLocalFile(doc._id, null);
-        const merged = mergeWithLocal(doc._id, doc.data, local);
-        memoryCache.set(doc._id, merged);
+        memoryCache.set(doc._id, doc.data);
+        writeLocalFile(doc._id, doc.data);
       }
     }
 

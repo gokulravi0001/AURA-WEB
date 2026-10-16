@@ -4,6 +4,7 @@ const { readJson, writeJson } = require("../utils/jsonStore");
 
 const refreshTimers = new Map();
 const refreshQueues = new Map();
+const activeLocks = new Set();
 
 function readData() {
   return readJson("sticky-messages.json", {});
@@ -33,53 +34,99 @@ function getAllStickies(guildId) {
   return list;
 }
 
-async function postStickyMessage(client, guildId, channelId) {
-  const key = makeKey(guildId, channelId);
-  const data = readData();
-  const sticky = data[key];
+/**
+ * Aggressively purges old sticky messages for this channel.
+ * Tries direct ID deletion first, then scans recent channel messages to eliminate duplicates.
+ */
+async function cleanupOldStickyMessages(client, channel, stickyMessageId) {
+  if (!channel?.isTextBased()) return;
 
-  if (!sticky) return false;
-
-  const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
-  if (!guild) return false;
-
-  const channel = await fetchChannel(guild, channelId);
-  if (!channel?.isTextBased()) return false;
-
-  // Delete previous sticky message if exists
-  if (sticky.messageId) {
-    const oldMessage = await fetchMessage(channel, sticky.messageId);
-    if (oldMessage) {
-      await oldMessage.delete().catch(() => {});
+  // 1. Direct delete previously recorded message ID
+  if (stickyMessageId) {
+    try {
+      await channel.messages.delete(stickyMessageId);
+    } catch {
+      try {
+        const oldMsg = await fetchMessage(channel, stickyMessageId);
+        if (oldMsg) await oldMsg.delete().catch(() => {});
+      } catch {}
     }
   }
 
-  let newMessage;
-  if (sticky.asEmbed) {
-    const color = sticky.color ? parseInt(sticky.color.replace("#", ""), 16) : 0x5865f2;
-    const embed = new EmbedBuilder()
-      .setColor(isNaN(color) ? 0x5865f2 : color)
-      .setTitle(sticky.title || "📌 Notice")
-      .setDescription(sticky.text)
-      .setFooter({ text: "Sticky Message • Stays at the bottom of the chat" });
+  // 2. Scan recent messages in channel to catch any orphaned/duplicate sticky messages from this bot
+  try {
+    const recent = await channel.messages.fetch({ limit: 15 }).catch(() => null);
+    if (recent) {
+      for (const [, msg] of recent) {
+        if (msg.author?.id === client.user?.id) {
+          const isStickyEmbed = msg.embeds?.[0]?.footer?.text?.includes("Sticky Message");
+          const isStickyContent = msg.content?.includes("📌 **Sticky Message:**");
+          if (isStickyEmbed || isStickyContent) {
+            await msg.delete().catch(() => {});
+          }
+        }
+      }
+    }
+  } catch {}
+}
 
-    newMessage = await channel.send({
-      embeds: [embed],
-    }).catch(() => null);
-  } else {
-    newMessage = await channel.send({
-      content: `📌 **Sticky Message:**\n${sticky.text}`,
-      allowedMentions: { parse: [] },
-    }).catch(() => null);
+async function postStickyMessage(client, guildId, channelId) {
+  const key = makeKey(guildId, channelId);
+  if (activeLocks.has(key)) return false;
+  activeLocks.add(key);
+
+  try {
+    const data = readData();
+    const sticky = data[key];
+
+    if (!sticky) return false;
+
+    const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
+    if (!guild) return false;
+
+    const channel = await fetchChannel(guild, channelId);
+    if (!channel?.isTextBased()) return false;
+
+    // Check if sticky is already the last message in channel and hasn't changed
+    if (channel.lastMessageId && sticky.messageId && channel.lastMessageId === sticky.messageId) {
+      return true;
+    }
+
+    // Clean up all previous sticky messages in this channel
+    await cleanupOldStickyMessages(client, channel, sticky.messageId);
+
+    let newMessage = null;
+    if (sticky.asEmbed) {
+      const color = sticky.color ? parseInt(sticky.color.replace("#", ""), 16) : 0x5865f2;
+      const embed = new EmbedBuilder()
+        .setColor(isNaN(color) ? 0x5865f2 : color)
+        .setTitle(sticky.title || "📌 Notice")
+        .setDescription(sticky.text)
+        .setFooter({ text: "Sticky Message • Stays at the bottom of the chat" });
+
+      newMessage = await channel.send({
+        embeds: [embed],
+      }).catch(() => null);
+    } else {
+      newMessage = await channel.send({
+        content: `📌 **Sticky Message:**\n${sticky.text}`,
+        allowedMentions: { parse: [] },
+      }).catch(() => null);
+    }
+
+    if (newMessage) {
+      const freshData = readData();
+      if (freshData[key]) {
+        freshData[key].messageId = newMessage.id;
+        writeData(freshData);
+      }
+      return true;
+    }
+
+    return false;
+  } finally {
+    activeLocks.delete(key);
   }
-
-  if (newMessage) {
-    data[key].messageId = newMessage.id;
-    writeData(data);
-    return true;
-  }
-
-  return false;
 }
 
 async function setStickyMessage(client, guildId, channelId, text, asEmbed = false, title = null, color = null) {
@@ -112,17 +159,15 @@ async function removeStickyMessage(client, guildId, channelId) {
   const sticky = data[key];
   if (!sticky) return false;
 
+  const previousId = sticky.messageId;
   delete data[key];
   writeData(data);
 
   const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
   if (guild) {
     const channel = await fetchChannel(guild, channelId);
-    if (channel?.isTextBased() && sticky.messageId) {
-      const oldMessage = await fetchMessage(channel, sticky.messageId);
-      if (oldMessage) {
-        await oldMessage.delete().catch(() => {});
-      }
+    if (channel?.isTextBased()) {
+      await cleanupOldStickyMessages(client, channel, previousId);
     }
   }
 
@@ -152,14 +197,14 @@ function scheduleRefresh(client, guildId, channelId) {
         refreshQueues.delete(key);
       }
     });
-  }, 2500);
+  }, 1200);
 
   refreshTimers.set(key, timer);
 }
 
 function registerStickyEvents(client) {
   client.on("messageCreate", (message) => {
-    if (!message.guild || message.author.bot) return;
+    if (!message.guild || message.author?.bot) return;
 
     const sticky = getStickyMessage(message.guild.id, message.channel.id);
     if (!sticky) return;
@@ -173,5 +218,6 @@ module.exports = {
   getAllStickies,
   setStickyMessage,
   removeStickyMessage,
+  postStickyMessage,
   registerStickyEvents,
 };
