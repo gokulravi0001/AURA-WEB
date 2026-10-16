@@ -144,10 +144,10 @@ function getMemberStats(guildId, userId) {
   };
 }
 
-function getLeaderboard(guildId, limit = 20) {
+function getLeaderboard(guildId, limit = null) {
   const guildUsers = readData().users[guildId] || {};
 
-  return Object.entries(guildUsers)
+  const all = Object.entries(guildUsers)
     .map(([userId, stats]) => ({
       userId,
       username: stats.username || `User (${userId.slice(-4)})`,
@@ -155,8 +155,10 @@ function getLeaderboard(guildId, limit = 20) {
       xp: stats.xp || 0,
       level: calculateLevel(stats.xp || 0),
     }))
-    .sort((a, b) => b.xp - a.xp)
-    .slice(0, limit);
+    .sort((a, b) => b.xp - a.xp);
+
+  if (limit && limit > 0) return all.slice(0, limit);
+  return all;
 }
 
 async function giveRewardRoles(guild, userId, oldLevel, newLevel) {
@@ -336,7 +338,7 @@ async function giveActivityXp(client) {
 
       if (xpToGive > 0) {
         data.users[guild.id][member.id] ||= { xp: 0 };
-        data.users[guild.id][member.id].username = member.user.globalName || member.user.username;
+        data.users[guild.id][member.id].username = member.user.username;
         data.users[guild.id][member.id].avatar = member.user.displayAvatarURL({ size: 128 });
         const oldLvl = calculateLevel(data.users[guild.id][member.id].xp);
         data.users[guild.id][member.id].xp += xpToGive;
@@ -372,7 +374,7 @@ function registerLevelEvents(client) {
     messageCooldowns.set(cooldownKey, now);
 
     const chatXp = Math.floor(Math.random() * 11) + 10;
-    const authorUsername = message.author.globalName || message.author.username;
+    const authorUsername = message.author.username;
     const authorAvatar = message.author.displayAvatarURL({ size: 128 });
 
     await giveXp(message.guild, message.author.id, chatXp, authorUsername, authorAvatar).catch((error) => {

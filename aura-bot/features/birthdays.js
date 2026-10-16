@@ -1,31 +1,19 @@
-const fs = require("node:fs");
-const path = require("node:path");
 const { EmbedBuilder } = require("discord.js");
 const { fetchChannel } = require("../utils/helpers");
+const { readJson, writeJson } = require("../utils/jsonStore");
 
-const dataFile = path.join(__dirname, "..", "data", "birthdays.json");
 const DEFAULT_TIME_ZONE = "Asia/Kolkata";
 
 function readData() {
-  try {
-    if (!fs.existsSync(dataFile)) {
-      return { settings: {}, birthdays: {} };
-    }
-
-    const data = JSON.parse(fs.readFileSync(dataFile, "utf8"));
-    return {
-      settings: data.settings || {},
-      birthdays: data.birthdays || {},
-    };
-  } catch (error) {
-    console.error("Could not read birthday data:", error);
-    return { settings: {}, birthdays: {} };
-  }
+  const data = readJson("birthdays.json", { settings: {}, birthdays: {} });
+  return {
+    settings: data.settings || {},
+    birthdays: data.birthdays || {},
+  };
 }
 
 function writeData(data) {
-  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
-  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+  writeJson("birthdays.json", data);
 }
 
 function getBirthdaySettings(guildId) {
@@ -75,7 +63,7 @@ function removeBirthday(guildId, userId) {
  */
 function isValidBirthday(dateText) {
   if (!dateText || typeof dateText !== "string") return false;
-  const trimmed = dateText.trim();
+  const trimmed = dateText.trim().replace(/[-.]/g, "/");
 
   // 1. DD/MM/YYYY
   const matchFull = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
@@ -115,7 +103,7 @@ function isValidBirthday(dateText) {
 }
 
 function formatBirthdayString(dateText) {
-  const parts = dateText.trim().split("/");
+  const parts = dateText.trim().replace(/[-.]/g, "/").split("/");
   const day = parts[0].padStart(2, "0");
   const month = parts[1].padStart(2, "0");
   if (parts.length === 3) {
@@ -215,12 +203,31 @@ function registerBirthdayEvents(client) {
     if (message.channel.id !== settings.inputChannelId) return;
 
     const dateText = message.content.trim();
-    if (!isValidBirthday(dateText)) return;
+    if (!isValidBirthday(dateText)) {
+      await message.delete().catch(() => {});
+      const warnMsg = await message.channel
+        .send(
+          `⚠️ <@${message.author.id}>, please use format **DD/MM** (e.g. \`24/05\`) or **DD/MM/YYYY** (e.g. \`24/05/2005\`).`
+        )
+        .catch(() => {});
+      if (warnMsg) {
+        setTimeout(() => warnMsg.delete().catch(() => {}), 6000);
+      }
+      return;
+    }
 
     const formatted = formatBirthdayString(dateText);
     setBirthday(message.guild.id, message.author.id, formatted);
 
     await message.delete().catch(() => {});
+
+    // Send confirmation in channel (auto-deleting after 8 seconds) so user sees it even if DMs are disabled
+    const confMsg = await message.channel
+      .send(`🎂 <@${message.author.id}>, your birthday has been saved as **${formatted}**! 🎉`)
+      .catch(() => {});
+    if (confMsg) {
+      setTimeout(() => confMsg.delete().catch(() => {}), 8000);
+    }
 
     await message.author
       .send(`🎂 Your birthday has been saved as **${formatted}** for **${message.guild.name}**!`)

@@ -138,7 +138,11 @@ const bot = new Client({
   ],
 });
 
+const { initDatabase } = require("./utils/database");
+
 async function main() {
+  await initDatabase();
+
   const commandPayload = commands.map((command) => command.data.toJSON());
 
   if (DISCORD_TOKEN && CLIENT_ID) {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AURA • Red & Purple Flame Discord Bot & Dashboard</title>
+  <title>AURA • Red & Purple Flame Discord Bot & Web Control Center</title>
   
   <!-- Favicon / AURA Crown Icon -->
   <link rel="icon" type="image/png" href="aura-logo.png">
@@ -26,14 +26,14 @@
   <!-- Live Toast Alert -->
   <div id="toast-notify" class="toast-alert">🔥 Settings updated successfully!</div>
 
-  <!-- Login & Server Switcher Modal (Discord OAuth2 + Direct Server) -->
+  <!-- Server Switcher / Auth Modal -->
   <div id="auth-modal" class="modal-overlay">
     <div class="modal-card">
       <button class="modal-close-btn" onclick="closeAuthModal()">&times;</button>
       <div style="text-align: center; margin-bottom: 1.5rem;">
         <img src="aura-logo.png" style="width: 64px; height: 64px; border-radius: 50%; box-shadow: 0 0 20px rgba(255,42,85,0.6); margin-bottom: 0.8rem;" alt="AURA">
-        <h3 style="font-size: 1.5rem; color: #fff;">Server Control Login</h3>
-        <p style="color: var(--text-muted); font-size: 0.85rem;">Login with Discord to manage your servers, or connect instantly with your Guild ID.</p>
+        <h3 style="font-size: 1.5rem; color: #fff;">Server Switcher</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Login via Discord or enter your Discord Server (Guild ID) to manage features.</p>
       </div>
 
       <!-- Discord OAuth2 Login Button -->
@@ -55,15 +55,15 @@
       <div style="display: flex; flex-direction: column; gap: 1.2rem;">
         <div class="form-group" style="margin-bottom:0;">
           <label class="form-label">Your Admin Username</label>
-          <input type="text" id="login-username" class="form-input" placeholder="e.g. FlameMaster" value="ServerManager">
+          <input type="text" id="modal-login-username" class="form-input" placeholder="e.g. FlameMaster" value="ServerManager">
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
           <label class="form-label">Target Discord Server (Guild ID)</label>
-          <input type="text" id="login-guild-id" class="form-input" placeholder="e.g. 1547837282109624462" value="1547837282109624462">
+          <input type="text" id="modal-login-guild-id" class="form-input" placeholder="e.g. 1547837282109624462" value="1547837282109624462">
         </div>
 
-        <button class="btn-aura" style="width: 100%; justify-content: center; padding: 0.85rem;" onclick="handleLogin()">
+        <button class="btn-aura" style="width: 100%; justify-content: center; padding: 0.85rem;" onclick="handleModalLogin()">
           Connect Server & Manage 🔥
         </button>
       </div>
@@ -76,7 +76,73 @@
     </div>
   </div>
 
-  <!-- Nekotina Style Top Navigation Bar -->
+  <!-- Add Birthday Modal -->
+  <div id="add-bday-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeAddBirthdayModal()">&times;</button>
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <span style="font-size: 2.5rem;">🎂</span>
+        <h3 style="font-size: 1.4rem; color: #fff; margin-top: 0.5rem;">Register Member Birthday</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Add a member's birthday to schedule automatic annual celebrations.</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Discord User ID</label>
+        <input type="text" id="modal-bday-userid" class="form-input" placeholder="e.g. 1544034105006620759">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Birthday Date (DD/MM or DD/MM/YYYY)</label>
+        <input type="text" id="modal-bday-date" class="form-input" placeholder="e.g. 24/05 or 15/08/2004">
+        <span class="form-sublabel">Example: <code>24/05</code> for May 24th</span>
+      </div>
+
+      <button class="btn-aura" style="width: 100%; justify-content: center; padding: 0.85rem;" onclick="submitNewBirthday()">
+        Save Member Birthday 🎂
+      </button>
+    </div>
+  </div>
+
+  <!-- Central Database Status & Cloud Setup Modal -->
+  <div id="db-info-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 580px;">
+      <button class="modal-close-btn" onclick="closeDbInfoModal()">&times;</button>
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <span style="font-size: 2.5rem;">☁️</span>
+        <h3 style="font-size: 1.4rem; color: #fff; margin-top: 0.5rem;">Central Database Cloud Sync</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Cross-environment synchronization between your Bot Host and Render Dashboard.</p>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1.2rem; border: var(--border-aura); margin-bottom: 1.2rem;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+          <span style="color:var(--text-muted);">Connection Status:</span>
+          <strong id="modal-db-status" style="color:#00ffa6;">Connected</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+          <span style="color:var(--text-muted);">Database Engine:</span>
+          <strong id="modal-db-type" style="color:#fff;">MongoDB Atlas</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Host Environment:</span>
+          <strong id="modal-db-env" style="color:#ff6685;">Render / Bot Host</strong>
+        </div>
+      </div>
+
+      <h4 style="font-size:0.95rem; color:#fff; margin-bottom:0.6rem;">How To Connect Both Environments:</h4>
+      <ol style="color:var(--text-muted); font-size:0.85rem; line-height:1.7; padding-left:1.2rem; margin-bottom:1.5rem;">
+        <li>Get a free MongoDB connection URI from <a href="https://www.mongodb.com/cloud/atlas" target="_blank" style="color:#ff3366;">MongoDB Atlas</a>.</li>
+        <li>In your <strong>Bot Host (.env)</strong>, add: <code>MONGODB_URI=mongodb+srv://...</code></li>
+        <li>In your <strong>Render Dashboard (Environment Variables)</strong>, add: <code>MONGODB_URI=mongodb+srv://...</code></li>
+        <li>Now every setting changed on Render immediately updates the Bot on your Bot Host!</li>
+      </ol>
+
+      <button class="btn-aura-outline" style="width: 100%; justify-content: center; padding: 0.75rem;" onclick="closeDbInfoModal()">
+        Got It 👍
+      </button>
+    </div>
+  </div>
+
+  <!-- Top Navigation Bar -->
   <header class="aura-navbar">
     <a href="/" class="nav-brand" onclick="navigateTo('home', event)">
       <img src="aura-logo.png" alt="AURA Logo" class="brand-pfp">
@@ -85,15 +151,21 @@
 
     <nav>
       <ul class="nav-links">
-        <li><a class="nav-link active" data-view="home" onclick="navigateTo('home', event)">Home</a></li>
-        <li><a class="nav-link" data-view="commands" onclick="navigateTo('commands', event)">Commands</a></li>
-        <li><a class="nav-link" data-view="leaderboard" onclick="navigateTo('leaderboard', event)">Leaderboard</a></li>
+        <li><a class="nav-link active" data-view="login" onclick="navigateTo('login', event)">Login</a></li>
         <li><a class="nav-link" data-view="dashboard" onclick="navigateTo('dashboard', event)">Dashboard</a></li>
+        <li><a class="nav-link" data-view="leaderboard" onclick="navigateTo('leaderboard', event)">Leaderboard</a></li>
+        <li><a class="nav-link" data-view="profile" onclick="navigateTo('profile', event)">Member Profile</a></li>
+        <li><a class="nav-link" data-view="commands" onclick="navigateTo('commands', event)">Commands</a></li>
         <li><a class="nav-link" data-view="docs" onclick="navigateTo('docs', event)">Guide & Wiki</a></li>
       </ul>
     </nav>
 
     <div class="nav-actions">
+      <!-- Cloud Database Sync Pill -->
+      <div class="db-status-pill" id="nav-db-status" onclick="openDbInfoModal()" title="Cloud Database Sync Status">
+        <span>🟢</span> <span id="db-status-text">DB: Checking...</span>
+      </div>
+
       <!-- Active Guild Selector Pill -->
       <div class="user-profile-pill" id="guild-selector-pill" onclick="openAuthModal()" title="Switch or connect server">
         <div class="user-avatar-circle" id="nav-guild-icon">
@@ -106,7 +178,7 @@
       </div>
 
       <!-- Primary Action / Discord Auth Button -->
-      <button onclick="loginWithDiscord()" class="btn-discord-login" id="nav-login-btn">
+      <button onclick="navigateTo('login')" class="btn-discord-login" id="nav-login-btn">
         <span>⚡</span> Discord Login
       </button>
     </div>
@@ -116,32 +188,81 @@
   <main class="page-container">
 
     <!-- =======================================================================
-         VIEW 1: HOME / LANDING PAGE (Nekotina Style)
+         VIEW 0: DEDICATED LOGIN PAGE (DISCORD OAUTH2 & DIRECT GUILD SYNC)
          ======================================================================= -->
-    <section id="view-home" class="page-view active-view">
-      
+    <section id="view-login" class="page-view active-view">
+      <div style="max-width: 540px; margin: 3rem auto; padding: 2.5rem; background: var(--bg-card); border-radius: 24px; border: var(--border-aura); box-shadow: var(--glow-aura); text-align: center;">
+        <div style="position: relative; display: inline-block; margin-bottom: 1.5rem;">
+          <img src="aura-logo.png" style="width: 88px; height: 88px; border-radius: 50%; box-shadow: 0 0 30px rgba(255,42,85,0.7); object-fit: cover;" alt="AURA">
+          <div style="position: absolute; bottom: 0; right: 0; background: #00ffa6; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #08030c;"></div>
+        </div>
+        
+        <h2 style="font-size: 2rem; color: #fff; margin-bottom: 0.5rem; font-weight: 800;">
+          AURA Control Center
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem;">
+          Authenticate with Discord to manage server announcements, reaction roles, rules, temp voice, and live community stats.
+        </p>
+
+        <!-- Discord OAuth2 Login Button -->
+        <button class="btn-discord-login" onclick="loginWithDiscord()" style="width: 100%; justify-content: center; padding: 1.1rem; font-size: 1.05rem; margin-bottom: 1.5rem; border-radius: 14px; box-shadow: 0 4px 20px rgba(88,101,242,0.4);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+          </svg>
+          Log In With Discord (OAuth2)
+        </button>
+
+        <div style="display: flex; align-items: center; gap: 0.8rem; margin: 1.8rem 0;">
+          <div style="flex: 1; height: 1px; background: rgba(255, 42, 85, 0.25);"></div>
+          <span style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Or Direct Server Connect</span>
+          <div style="flex: 1; height: 1px; background: rgba(255, 42, 85, 0.25);"></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 1.2rem; text-align: left;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Administrator Username</label>
+            <input type="text" id="login-username" class="form-input" placeholder="e.g. FlameMaster" value="ServerManager">
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Target Discord Server ID (Guild ID)</label>
+            <input type="text" id="login-guild-id" class="form-input" placeholder="e.g. 1547837282109624462" value="1547837282109624462">
+            <span class="form-sublabel">Changes saved here directly update Discord bot files & active features.</span>
+          </div>
+
+          <button class="btn-aura" style="width: 100%; justify-content: center; padding: 1rem; font-size: 1rem; margin-top: 0.5rem;" onclick="handleDirectPageLogin()">
+            Connect & Open Dashboard 🔥
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 1: HOME / LANDING PAGE
+         ======================================================================= -->
+    <section id="view-home" class="page-view">
       <!-- Hero Banner -->
       <div class="hero-wrapper">
         <div class="hero-content">
           <div class="hero-tag">
-            <span>👑</span> The Ultimate Red & Purple Flame Bot
+            <span>👑</span> The Ultimate Red & Purple Flame Discord Core
           </div>
           <h1 class="hero-heading">
             Elevate Your Server With <span class="aura-gradient-text">AURA.</span>
           </h1>
           <p class="hero-desc">
-            A comprehensive, all-in-one multipurpose Discord bot featuring high-octane Anti-Raid security, leveling & XP rewards, temporary voice channels, interactive tickets, and an intuitive web management dashboard.
+            A comprehensive, high-performance Discord bot featuring real-time announcements, structured rules, 25-slot reaction roles, temp voice hubs, exact username leaderboards, and direct live web control.
           </p>
 
           <div class="hero-cta-group">
-            <button onclick="navigateTo('dashboard')" class="btn-aura">
-              <span>⚡</span> Open Dashboard
+            <button onclick="navigateTo('login')" class="btn-aura">
+              <span>⚡</span> Connect With Discord
             </button>
-            <a href="https://discord.com/oauth2/authorize?client_id=123456789012345678&scope=bot%20applications.commands&permissions=8" target="_blank" class="btn-aura-outline" id="hero-invite-btn">
-              <span>➕</span> Invite AURA
-            </a>
-            <button onclick="navigateTo('commands')" class="btn-aura-outline">
-              <span>📜</span> View 30 Commands
+            <button onclick="navigateTo('dashboard')" class="btn-aura-outline">
+              <span>🎛️</span> Open Dashboard
+            </button>
+            <button onclick="navigateTo('leaderboard')" class="btn-aura-outline">
+              <span>🏆</span> XP Leaderboard
             </button>
           </div>
 
@@ -156,7 +277,7 @@
             </div>
             <div class="stat-item">
               <h3 id="stat-commands">30</h3>
-              <p>Unified Slash Commands</p>
+              <p>Slash Commands</p>
             </div>
             <div class="stat-item">
               <h3 style="color:#00ffa6;">99.9%</h3>
@@ -172,129 +293,200 @@
             <div class="hero-pfp-glow-ring"></div>
           </div>
           <div class="floating-badge badge-top-left">
-            <span>🛡️</span> Anti-Raid Sentinel Active
+            <span>🛡️</span> Real-time Bot Sync
           </div>
           <div class="floating-badge badge-bottom-right">
-            <span>🏆</span> Real-Time XP Tracking
+            <span>🏆</span> Exact Usernames
           </div>
         </div>
       </div>
 
-      <!-- Feature Modules Grid (Nekotina Style) -->
+      <!-- Feature Modules Grid -->
       <div class="section-header">
-        <span class="section-tag">Core Capabilities</span>
-        <h2 class="section-title">Engineered For Powerful Communities</h2>
-        <p class="section-desc">Manage every aspect of your Discord server effortlessly without leaving your browser.</p>
+        <span class="section-tag">Core Features</span>
+        <h2 class="section-title">Full Discord Server Synchronization</h2>
+        <p class="section-desc">Manage every feature directly from your browser. Every button press immediately syncs to your Discord server.</p>
       </div>
 
       <div class="modules-grid">
-        <div class="module-card" onclick="navigateToDashboardTab('security')">
-          <div class="module-icon-wrap">🛡️</div>
-          <h3 class="module-title">Anti-Raid & Security</h3>
-          <p class="module-text">Instant mass-join lockdown, anti-spam throttling, and Anti-Nuke protections that shield your roles and channels from malicious attacks.</p>
-          <span class="module-link">Configure Security &rarr;</span>
+        <div class="module-card" onclick="navigateToDashboardTab('pane-announcement')">
+          <div class="module-icon-wrap">📢</div>
+          <h3 class="module-title">Set Announcement</h3>
+          <p class="module-text">Ask for channel, title, content, image URL, and role ping to send rich flame embeds directly to your Discord chat.</p>
+          <span class="module-link">Setup Announcement &rarr;</span>
         </div>
 
-        <div class="module-card" onclick="navigateToDashboardTab('general')">
+        <div class="module-card" onclick="navigateToDashboardTab('pane-rules')">
+          <div class="module-icon-wrap">📜</div>
+          <h3 class="module-title">Set Rules</h3>
+          <p class="module-text">Dynamic rule count generator. Create custom titles and descriptions for every rule and publish them cleanly.</p>
+          <span class="module-link">Generate Rules &rarr;</span>
+        </div>
+
+        <div class="module-card" onclick="navigateToDashboardTab('pane-reaction-roles')">
+          <div class="module-icon-wrap">🎭</div>
+          <h3 class="module-title">Set Reaction Roles</h3>
+          <p class="module-text">Up to 25 reaction roles in a single embed. Choose unique one-choice roles or restrict roles by permissions.</p>
+          <span class="module-link">Setup Reaction Roles &rarr;</span>
+        </div>
+
+        <div class="module-card" onclick="navigateToDashboardTab('pane-greetings')">
           <div class="module-icon-wrap">👋</div>
-          <h3 class="module-title">Welcome & Announcements</h3>
-          <p class="module-text">Customizable greeting cards with server variables ({user}, {server}, {count}), dynamic embed flame colors, and farewell logs.</p>
-          <span class="module-link">Setup Greetings &rarr;</span>
+          <h3 class="module-title">Welcome & Goodbye</h3>
+          <p class="module-text">Configure separate welcome and goodbye channels, messages, and flame accent colors.</p>
+          <span class="module-link">Configure Greetings &rarr;</span>
+        </div>
+
+        <div class="module-card" onclick="navigateToDashboardTab('pane-voice')">
+          <div class="module-icon-wrap">🔊</div>
+          <h3 class="module-title">Temp Voice Hub</h3>
+          <p class="module-text">Automated Join-to-Create voice channels with customizable category and dynamic room names.</p>
+          <span class="module-link">Configure Voice Hub &rarr;</span>
         </div>
 
         <div class="module-card" onclick="navigateTo('leaderboard')">
           <div class="module-icon-wrap">🏆</div>
-          <h3 class="module-title">Leveling & XP Leaderboard</h3>
-          <p class="module-text">Accurate member progression with real usernames, avatars, voice-time rewards, role rewards, and web leaderboard.</p>
-          <span class="module-link">View Leaderboard &rarr;</span>
-        </div>
-
-        <div class="module-card" onclick="navigateToDashboardTab('voice')">
-          <div class="module-icon-wrap">🔊</div>
-          <h3 class="module-title">Join-to-Create Voice</h3>
-          <p class="module-text">Automated temporary voice channels created on demand. Channel hosts can lock, hide, limit, rename, and manage their rooms.</p>
-          <span class="module-link">Configure Voice Hub &rarr;</span>
-        </div>
-
-        <div class="module-card" onclick="navigateToDashboardTab('tickets')">
-          <div class="module-icon-wrap">🎫</div>
-          <h3 class="module-title">Interactive Ticket Panels</h3>
-          <p class="module-text">Private support ticket channels with button controls, staff assignment, transcript generators, and automated closure.</p>
-          <span class="module-link">Configure Tickets &rarr;</span>
-        </div>
-
-        <div class="module-card" onclick="navigateToDashboardTab('media')">
-          <div class="module-icon-wrap">🎥</div>
-          <h3 class="module-title">Native Media Fixer</h3>
-          <p class="module-text">Automatic link rewriting for TikTok, Instagram Reels, Reddit, and Twitter/X so videos play directly in Discord chats.</p>
-          <span class="module-link">Manage Media Embeds &rarr;</span>
+          <h3 class="module-title">XP Leaderboard & Profile</h3>
+          <p class="module-text">Live member rankings strictly showing exact Discord usernames (no nicknames) with full profile stats view.</p>
+          <span class="module-link">Open Leaderboard &rarr;</span>
         </div>
       </div>
     </section>
 
     <!-- =======================================================================
-         VIEW 2: COMMANDS LIBRARY (Nekotina Style)
-         ======================================================================= -->
-    <section id="view-commands" class="page-view">
-      <div class="section-header" style="margin-top: 1rem;">
-        <span class="section-tag">Command Catalog</span>
-        <h2 class="section-title">All 30 Slash Commands</h2>
-        <p class="section-desc">Search and filter AURA's unified command library.</p>
-      </div>
-
-      <div class="commands-controls">
-        <div class="search-box-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="cmd-search" class="search-input" placeholder="Search commands, descriptions or options...">
-        </div>
-
-        <div class="category-pills">
-          <button class="cat-pill-btn active" data-cat="all">All (30)</button>
-          <button class="cat-pill-btn" data-cat="Security">Security</button>
-          <button class="cat-pill-btn" data-cat="Community">Community</button>
-          <button class="cat-pill-btn" data-cat="Leveling">Leveling</button>
-          <button class="cat-pill-btn" data-cat="Voice Hub">Voice Hub</button>
-          <button class="cat-pill-btn" data-cat="Support">Support</button>
-          <button class="cat-pill-btn" data-cat="Minigames">Minigames</button>
-          <button class="cat-pill-btn" data-cat="Utility">Utility</button>
-        </div>
-      </div>
-
-      <div class="commands-grid" id="commands-container">
-        <!-- Rendered dynamically -->
-      </div>
-    </section>
-
-    <!-- =======================================================================
-         VIEW 3: XP LEADERBOARD
+         VIEW 2: XP LEADERBOARD (EXACT DISCORD USERNAMES - NO NICKNAMES)
          ======================================================================= -->
     <section id="view-leaderboard" class="page-view">
       <div class="section-header" style="margin-top: 1rem;">
         <span class="section-tag">Hall of Flame</span>
         <h2 class="section-title">Community XP Leaderboard</h2>
-        <p class="section-desc">Real-time ranking of active server members with verified usernames and avatars.</p>
+        <p class="section-desc">Accurate server rankings showing verified Discord usernames (no custom nicknames) and active statistics.</p>
       </div>
 
       <div class="leaderboard-card">
+        <!-- Search & Per-Page Controls -->
+        <div class="table-search-bar">
+          <div style="position: relative; flex: 1; max-width: 360px;">
+            <input type="text" id="lb-search-input" class="table-search-input" style="width: 100%;" placeholder="🔍 Search exact username or User ID..." oninput="onLeaderboardSearch()">
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Per Page:</span>
+            <select id="lb-page-size" class="pagination-select" onchange="changeLeaderboardPageSize()">
+              <option value="10">10</option>
+              <option value="15" selected>15</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+        </div>
+
         <table class="leaderboard-table">
           <thead>
             <tr>
               <th style="width: 80px;">Rank</th>
-              <th>Member</th>
+              <th>Member (Exact Username)</th>
               <th>Level</th>
               <th>Total XP</th>
               <th>Messages</th>
+              <th style="text-align: right;">Profile</th>
             </tr>
           </thead>
           <tbody id="leaderboard-body">
-            <!-- Rendered dynamically -->
+            <!-- Dynamically populated -->
           </tbody>
         </table>
+
+        <!-- Interactive Pagination Bar -->
+        <div class="pagination-container" id="lb-pagination">
+          <span class="pagination-info" id="lb-pagination-info">Showing 0 of 0 ranked members</span>
+          <div class="pagination-controls" id="lb-pagination-controls">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- =======================================================================
-         VIEW 4: MANAGEMENT DASHBOARD (Nekotina Style Sidebar & Panels)
+         VIEW 3: MEMBER PROFILE VIEW & STAT VIEW
+         ======================================================================= -->
+    <section id="view-profile" class="page-view">
+      <div class="section-header" style="margin-top: 1rem;">
+        <span class="section-tag">Member Statistics</span>
+        <h2 class="section-title">Profile View & Stat View</h2>
+        <p class="section-desc">Inspect in-depth statistics, level progression, voice activity, reputation, and invite records.</p>
+      </div>
+
+      <div style="max-width: 720px; margin: 0 auto;">
+        <!-- Member Lookup Box -->
+        <div class="panel-card" style="margin-bottom: 1.5rem;">
+          <div class="panel-header">
+            <span class="panel-header-title"><span>🔍</span> Lookup Member By User ID</span>
+          </div>
+          <div style="display: flex; gap: 0.8rem;">
+            <input type="text" id="profile-search-id" class="form-input" placeholder="Enter Discord User ID (e.g. 1555057113687130120)">
+            <button class="btn-aura" onclick="lookupMemberProfile()" style="padding: 0.7rem 1.5rem; white-space: nowrap;">Inspect Stats ⚡</button>
+          </div>
+        </div>
+
+        <!-- Rendered Member Profile Card -->
+        <div id="profile-card-render" class="panel-card" style="display: none;">
+          <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,42,85,0.2); padding-bottom: 1.5rem;">
+            <img id="prof-avatar" src="aura-logo.png" style="width: 80px; height: 80px; border-radius: 50%; box-shadow: var(--glow-aura); object-fit: cover;" alt="Avatar">
+            <div>
+              <h3 id="prof-username" style="font-size: 1.5rem; color: #fff; font-weight: 800;">Username</h3>
+              <p id="prof-userid" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim);">ID: 000000000000</p>
+              <p id="prof-bio" style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.3rem;">Bio goes here</p>
+            </div>
+          </div>
+
+          <div class="stat-grid-dashboard">
+            <div class="stat-card-widget">
+              <div class="stat-icon-circle">⭐</div>
+              <div class="stat-meta">
+                <h4 id="prof-level">Level 1</h4>
+                <p>Progression Level</p>
+              </div>
+            </div>
+
+            <div class="stat-card-widget">
+              <div class="stat-icon-circle">🔥</div>
+              <div class="stat-meta">
+                <h4 id="prof-xp">0 XP</h4>
+                <p>Total Flame XP</p>
+              </div>
+            </div>
+
+            <div class="stat-card-widget">
+              <div class="stat-icon-circle">🎙️</div>
+              <div class="stat-meta">
+                <h4 id="prof-voice">0 Mins</h4>
+                <p>Voice Chat Time</p>
+              </div>
+            </div>
+
+            <div class="stat-card-widget">
+              <div class="stat-icon-circle">💖</div>
+              <div class="stat-meta">
+                <h4 id="prof-rep">+0</h4>
+                <p>Reputation Score</p>
+              </div>
+            </div>
+
+            <div class="stat-card-widget">
+              <div class="stat-icon-circle">✉️</div>
+              <div class="stat-meta">
+                <h4 id="prof-invites">0 Invites</h4>
+                <p>Active Invites</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 4: MANAGEMENT DASHBOARD (ALL 18 REQUESTED FEATURES)
          ======================================================================= -->
     <section id="view-dashboard" class="page-view">
       <!-- Server Status Top Banner -->
@@ -317,74 +509,628 @@
         <!-- Dashboard Sidebar -->
         <aside class="dash-sidebar">
           <div class="dash-sidebar-header">
-            <h4 style="font-size:0.95rem; color:#fff; font-weight:800;">Server Settings</h4>
-            <span style="font-size:0.75rem; color:#ff6685;">AURA Control Hub</span>
+            <h4 style="font-size:0.95rem; color:#fff; font-weight:800;">AURA Control Hub</h4>
+            <span style="font-size:0.75rem; color:#ff6685;">Server Synchronizer</span>
           </div>
 
-          <span class="sidebar-category-title">Core Modules</span>
-          <button class="dash-nav-btn active" data-pane="pane-general" onclick="switchDashPane('pane-general')">
-            <span class="icon">⚙️</span> General & Welcome
-          </button>
-          <button class="dash-nav-btn" data-pane="pane-security" onclick="switchDashPane('pane-security')">
-            <span class="icon">🚨</span> Anti-Raid & Security
-          </button>
-          <button class="dash-nav-btn" data-pane="pane-voice" onclick="switchDashPane('pane-voice')">
-            <span class="icon">🔊</span> Temp Voice Hub
-          </button>
-          <button class="dash-nav-btn" data-pane="pane-tickets" onclick="switchDashPane('pane-tickets')">
-            <span class="icon">🎫</span> Support Tickets
-          </button>
-
-          <span class="sidebar-category-title">Engagement & Content</span>
-          <button class="dash-nav-btn" data-pane="pane-media" onclick="switchDashPane('pane-media')">
-            <span class="icon">🎥</span> Media Fixer
+          <span class="sidebar-category-title">Essential Channels</span>
+          <button class="dash-nav-btn active" data-pane="pane-announcement" onclick="switchDashPane('pane-announcement')">
+            <span class="icon">📢</span> Set Announcement
           </button>
           <button class="dash-nav-btn" data-pane="pane-rules" onclick="switchDashPane('pane-rules')">
-            <span class="icon">📜</span> Server Rules Board
+            <span class="icon">📜</span> Set Rules
           </button>
-          <button class="dash-nav-btn" data-pane="pane-channels" onclick="switchDashPane('pane-channels')">
-            <span class="icon">📡</span> Log & Game Channels
+          <button class="dash-nav-btn" data-pane="pane-reaction-roles" onclick="switchDashPane('pane-reaction-roles')">
+            <span class="icon">🎭</span> Set Reaction Roles
           </button>
-          <button class="dash-nav-btn" data-pane="pane-embed-studio" onclick="switchDashPane('pane-embed-studio')">
-            <span class="icon">🎨</span> Embed Message Studio
+          <button class="dash-nav-btn" data-pane="pane-greetings" onclick="switchDashPane('pane-greetings')">
+            <span class="icon">👋</span> Welcome & Bye Embed
+          </button>
+          <button class="dash-nav-btn" data-pane="pane-sticky" onclick="switchDashPane('pane-sticky')">
+            <span class="icon">📌</span> Set Sticky
+          </button>
+          <button class="dash-nav-btn" data-pane="pane-threads" onclick="switchDashPane('pane-threads')">
+            <span class="icon">🧵</span> Set Thread
+          </button>
+
+          <span class="sidebar-category-title">Community & Games</span>
+          <button class="dash-nav-btn" data-pane="pane-birthday" onclick="switchDashPane('pane-birthday')">
+            <span class="icon">🎂</span> Set Birthday
+          </button>
+          <button class="dash-nav-btn" data-pane="pane-minigames" onclick="switchDashPane('pane-minigames')">
+            <span class="icon">🔢</span> Counting & Wordchain
+          </button>
+          <button class="dash-nav-btn" data-pane="pane-serverstats" onclick="switchDashPane('pane-serverstats')">
+            <span class="icon">📊</span> Server Stats
+          </button>
+          <button class="dash-nav-btn" data-pane="pane-levels" onclick="switchDashPane('pane-levels')">
+            <span class="icon">🆙</span> Set Level Up
+          </button>
+          <button class="dash-nav-btn" data-pane="pane-events" onclick="switchDashPane('pane-events')">
+            <span class="icon">📅</span> Set Event Announce
+          </button>
+
+          <span class="sidebar-category-title">Security & Utility</span>
+          <button class="dash-nav-btn" data-pane="pane-voice" onclick="switchDashPane('pane-voice')">
+            <span class="icon">🔊</span> Temp Voice Set
+          </button>
+          <button class="dash-nav-btn" data-pane="pane-invites" onclick="switchDashPane('pane-invites')">
+            <span class="icon">✉️</span> Invite Tracker
+          </button>
+          <button class="dash-nav-btn" data-pane="pane-logs" onclick="switchDashPane('pane-logs')">
+            <span class="icon">📋</span> Logs (Audit Log)
+          </button>
+          <button class="dash-nav-btn" data-pane="pane-security" onclick="switchDashPane('pane-security')">
+            <span class="icon">🚨</span> Security Set
           </button>
         </aside>
 
         <!-- Dashboard Content Panels -->
         <div class="dash-content-area">
 
-          <!-- PANE 1: General & Greetings -->
-          <div id="pane-general" class="config-pane active-pane">
+          <!-- ===================================================================
+               PANE 1: SET ANNOUNCEMENT
+               =================================================================== -->
+          <div id="pane-announcement" class="config-pane active-pane">
             <div class="panel-card">
               <div class="panel-header">
-                <span class="panel-header-title"><span>👋</span> Custom Welcome & Greetings</span>
-                <button class="btn-aura" onclick="saveGreetingsConfig()" style="padding:0.5rem 1.2rem; font-size:0.85rem;">Save Greetings 💾</button>
+                <span class="panel-header-title"><span>📢</span> Set Announcement</span>
+                <button class="btn-aura" onclick="saveAnnouncementConfig()">Publish Announcement 🔥</button>
               </div>
 
               <div class="form-group">
-                <label class="form-label">Welcome Header Title</label>
+                <label class="form-label">Target Discord Channel ID</label>
+                <input type="text" id="announce-channel-id" class="form-input" placeholder="e.g. 1555057113687130112">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Announcement Title</label>
+                <input type="text" id="announce-title" class="form-input" placeholder="e.g. 🚨 Important Server Update">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Announcement Content / Body</label>
+                <textarea id="announce-content" class="form-textarea" rows="4" placeholder="Write your full announcement message here..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Image URL (Optional)</label>
+                <input type="text" id="announce-image-url" class="form-input" placeholder="https://example.com/banner.png">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Mention Ping</label>
+                  <select id="announce-ping" class="form-input">
+                    <option value="none">No Mention (Silent)</option>
+                    <option value="everyone">@everyone</option>
+                    <option value="here">@here</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Flame Accent Color</label>
+                  <input type="color" id="announce-color" class="form-input" value="#ff2a55" style="height:44px; padding:4px;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 2: SET RULES (DYNAMIC COUNT, TITLE & CONTENT FOR EACH)
+               =================================================================== -->
+          <div id="pane-rules" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>📜</span> Set Rules</span>
+                <button class="btn-aura" onclick="saveStructuredRules()">Publish Rules 📜</button>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Rules Channel ID</label>
+                  <input type="text" id="rules-channel-id" class="form-input" placeholder="e.g. 1555057113687130110">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Embed Accent Color</label>
+                  <input type="color" id="rules-color" class="form-input" value="#5865f2" style="height:44px; padding:4px;">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Rules Header Title</label>
+                <input type="text" id="rules-header-title" class="form-input" value="📜 Official Server Rules & Guidelines">
+              </div>
+
+              <!-- Rule Count Generator Selector -->
+              <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.4); padding: 0.9rem 1.2rem; border-radius: 12px; margin-bottom: 1.2rem; border: var(--border-aura);">
+                <div>
+                  <strong style="color: #fff; font-size: 0.95rem;">Generate Multiple Rule Fields</strong>
+                  <p style="color: var(--text-dim); font-size: 0.8rem;">Select rule quantity to automatically create title and content inputs.</p>
+                </div>
+                <div style="display: flex; gap: 0.6rem; align-items: center;">
+                  <input type="number" id="rules-count-input" class="form-input" style="width: 70px; text-align: center;" min="1" max="25" value="3">
+                  <button type="button" class="btn-aura-outline" onclick="generateRuleFields()" style="padding: 0.6rem 1rem; font-size: 0.85rem;">Generate</button>
+                  <button type="button" class="btn-aura" onclick="addSingleRuleField()" style="padding: 0.6rem 1rem; font-size: 0.85rem;">+ Add Rule</button>
+                </div>
+              </div>
+
+              <!-- Container for dynamic rule rows -->
+              <div id="rules-fields-container" style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 3: SET REACTION ROLES (UP TO 25 FIELDS, UNIQUE CHOICE, RESTRICTED)
+               =================================================================== -->
+          <div id="pane-reaction-roles" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>🎭</span> Set Reaction Roles (Max 25 Roles)</span>
+                <button class="btn-aura" onclick="saveReactionRolesPanel()">Deploy Reaction Roles 🎭</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Target Channel ID</label>
+                <input type="text" id="rr-channel-id" class="form-input" placeholder="e.g. 1555057113687130111">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Panel Embed Title</label>
+                  <input type="text" id="rr-panel-title" class="form-input" value="🎭 Select Your Server Roles">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Embed Color</label>
+                  <input type="color" id="rr-panel-color" class="form-input" value="#8a2be2" style="height:44px; padding:4px;">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Panel Description</label>
+                <textarea id="rr-panel-desc" class="form-textarea" rows="2">React with the emojis below to claim or remove roles automatically!</textarea>
+              </div>
+
+              <!-- Options: Unique Choice & Restricted Roles -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 12px; margin-bottom: 1.2rem; border: var(--border-aura);">
+                <div>
+                  <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="rr-one-choice" style="width: 18px; height: 18px;">
+                    <strong>Unique Roles (One Choice Only)</strong>
+                  </label>
+                  <span class="form-sublabel">Users can select only 1 role in this embed (selecting another swaps it).</span>
+                </div>
+
+                <div>
+                  <label class="form-label">Restricted Roles (Access Requirement)</label>
+                  <input type="text" id="rr-access-roles" class="form-input" placeholder="Allowed Role IDs (comma-separated)">
+                  <span class="form-sublabel">Only members already holding these Role IDs can select.</span>
+                </div>
+              </div>
+
+              <!-- Reaction Roles Items Builder -->
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem;">
+                <div>
+                  <strong style="color: #fff;">Reaction Roles List</strong>
+                  <span id="rr-counter-badge" style="background: rgba(255,42,85,0.25); color: #ff6685; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; margin-left: 8px;">0 / 25 Max</span>
+                </div>
+                <button type="button" class="btn-aura-outline" onclick="addReactionRoleRow()" style="padding: 0.4rem 1rem; font-size: 0.85rem;">
+                  + Add Role (Max 25)
+                </button>
+              </div>
+
+              <div id="rr-items-container" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                <!-- Dynamically populated up to 25 items -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 4: SET WELCOME AND BYE EMBED
+               =================================================================== -->
+          <div id="pane-greetings" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>👋</span> Set Welcome & Bye Embed</span>
+                <button class="btn-aura" onclick="saveGreetingsConfig()">Save Greetings 💾</button>
+              </div>
+
+              <h4 style="color:#ff3366; font-size:1.05rem; margin-bottom:0.8rem;">Welcome Embed Configuration</h4>
+              <div class="form-group">
+                <label class="form-label">Welcome Channel ID</label>
+                <input type="text" id="cfg-welcome-channel-id" class="form-input" placeholder="e.g. 1555057113687130113">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Welcome Embed Title</label>
                 <input type="text" id="cfg-welcome-title" class="form-input" value="Welcome to {server}!">
               </div>
 
               <div class="form-group">
                 <label class="form-label">Welcome Message Body</label>
-                <span class="form-sublabel">Available Variables: <code>{user}</code>, <code>{server}</code>, <code>{count}</code></span>
+                <span class="form-sublabel">Variables: <code>{user}</code>, <code>{server}</code>, <code>{count}</code></span>
                 <textarea id="cfg-welcome-msg" class="form-textarea" rows="3">Welcome {user} to {server}! You are member #{count}!</textarea>
               </div>
 
               <div class="form-group">
-                <label class="form-label">Embed Flame Accent Color</label>
+                <label class="form-label">Welcome Embed Color</label>
                 <input type="color" id="cfg-welcome-color" class="form-input" value="#ff2a55" style="height:44px; padding:4px;">
+              </div>
+
+              <hr style="border:0; border-top:1px solid rgba(255,42,85,0.2); margin:1.8rem 0;">
+
+              <h4 style="color:#b300ff; font-size:1.05rem; margin-bottom:0.8rem;">Goodbye / Farewell Embed (Optional)</h4>
+              <div class="form-group">
+                <label class="form-label">Goodbye Channel ID</label>
+                <input type="text" id="cfg-bye-channel-id" class="form-input" placeholder="e.g. 1555057113687130114">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Goodbye Embed Title</label>
+                <input type="text" id="cfg-bye-title" class="form-input" value="Farewell From {server}">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Goodbye Message Body</label>
+                <textarea id="cfg-bye-msg" class="form-textarea" rows="2">{user} has left the server. Farewell!</textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Goodbye Embed Color</label>
+                <input type="color" id="cfg-bye-color" class="form-input" value="#9d00ff" style="height:44px; padding:4px;">
               </div>
             </div>
           </div>
 
-          <!-- PANE 2: Security & Anti-Raid -->
+          <!-- ===================================================================
+               PANE 5: SET STICKY MESSAGE
+               =================================================================== -->
+          <div id="pane-sticky" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>📌</span> Set Sticky Message</span>
+                <button class="btn-aura" onclick="saveStickyConfig()">Set Sticky Message 📌</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Target Channel ID</label>
+                <input type="text" id="sticky-channel-id" class="form-input" placeholder="e.g. 1555057113687130115">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">What To Stick (Message Content)</label>
+                <textarea id="sticky-content" class="form-textarea" rows="4" placeholder="This message will stay pinned at the bottom of the chat as members talk..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                  <input type="checkbox" id="sticky-as-embed" checked style="width: 18px; height: 18px;">
+                  <span>Post Sticky as Flame Embed</span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Embed Header Title (If Embed Enabled)</label>
+                <input type="text" id="sticky-title" class="form-input" value="📌 Sticky Notice">
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 6: SET THREAD
+               =================================================================== -->
+          <div id="pane-threads" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>🧵</span> Set Auto-Thread Channel</span>
+                <button class="btn-aura" onclick="saveThreadConfig()">Save Thread Settings 🧵</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Target Discussion Channel ID</label>
+                <input type="text" id="thread-channel-id" class="form-input" placeholder="e.g. 1555057113687130116">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Thread Creation Trigger Mode</label>
+                <select id="thread-mode" class="form-input">
+                  <option value="images_only">Only Messages With Images / Attachments (Media Showcase)</option>
+                  <option value="all">Every New Message</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Thread Name Pattern</label>
+                <input type="text" id="thread-name-pattern" class="form-input" value="💬 {user}'s Discussion">
+                <span class="form-sublabel">Supported variable: <code>{user}</code></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 7: SET BIRTHDAY CHANNELS
+               =================================================================== -->
+          <div id="pane-birthday" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>🎂</span> Set Birthday Channels</span>
+                <button class="btn-aura" onclick="saveBirthdayConfig()">Save Birthday Settings 🎂</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Birthday Input Channel ID (Where members type birthdays)</label>
+                <input type="text" id="bday-input-channel-id" class="form-input" placeholder="e.g. 1555057113687130117">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Birthday Announcement Channel ID (Where bot celebrates)</label>
+                <input type="text" id="bday-announce-channel-id" class="form-input" placeholder="e.g. 1555057113687130118">
+              </div>
+
+              <!-- Registered & Upcoming Birthdays Explorer -->
+              <div style="margin-top: 2rem; border-top: 1px solid rgba(255,42,85,0.25); padding-top: 1.5rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem;">
+                  <div>
+                    <h4 style="color:#ff69b4; font-size:1.15rem; margin:0; font-weight:800;">🎂 Upcoming & Registered Server Birthdays</h4>
+                    <p style="color: var(--text-dim); font-size: 0.8rem;">View members with upcoming birthdays sorted by nearest date with page navigation.</p>
+                  </div>
+                  <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="bday-search-input" class="table-search-input" style="width: 200px;" placeholder="🔍 Search member..." oninput="onBirthdaySearch()">
+                    <select id="bday-page-size" class="pagination-select" onchange="changeBirthdayPageSize()">
+                      <option value="10" selected>10</option>
+                      <option value="15">15</option>
+                      <option value="25">25</option>
+                      <option value="all">All</option>
+                    </select>
+                    <button type="button" class="btn-aura-outline" onclick="openAddBirthdayModal()" style="padding: 0.45rem 0.9rem; font-size: 0.8rem;">+ Add Birthday</button>
+                  </div>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.35); border-radius: 12px; border: var(--border-aura); overflow: hidden;">
+                  <table class="leaderboard-table" style="margin: 0;">
+                    <thead>
+                      <tr>
+                        <th>Member</th>
+                        <th>Birthday Date</th>
+                        <th>Upcoming Status</th>
+                        <th style="text-align: right;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="birthdays-table-body">
+                      <!-- Populated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Interactive Pagination Bar -->
+                <div class="pagination-container" id="bday-pagination">
+                  <span class="pagination-info" id="bday-pagination-info">Showing 0 of 0 birthdays</span>
+                  <div class="pagination-controls" id="bday-pagination-controls">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 8: SET COUNTING & WORD CHAIN
+               =================================================================== -->
+          <div id="pane-minigames" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>🔢</span> Set Counting & Word Chain Minigames</span>
+                <button class="btn-aura" onclick="saveMinigamesConfig()">Save Minigames Settings 🔢</button>
+              </div>
+
+              <h4 style="color:#ff3366; font-size:1.05rem; margin-bottom:0.8rem;">1. Counting Minigame</h4>
+              <div class="form-group">
+                <label class="form-label">Counting Channel ID</label>
+                <input type="text" id="counting-channel-id" class="form-input" placeholder="e.g. 1555057113687130119">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Counting Custom Mode</label>
+                <select id="counting-mode" class="form-input">
+                  <option value="allow_chat">Allow Chat Messages Alongside Numbers</option>
+                  <option value="strict">Strict Numbers Only (Deletes chat text)</option>
+                </select>
+              </div>
+
+              <hr style="border:0; border-top:1px solid rgba(255,42,85,0.2); margin:1.8rem 0;">
+
+              <h4 style="color:#b300ff; font-size:1.05rem; margin-bottom:0.8rem;">2. Word Chain Minigame</h4>
+              <div class="form-group">
+                <label class="form-label">Word Chain Channel ID</label>
+                <input type="text" id="wordchain-channel-id" class="form-input" placeholder="e.g. 1555057113687130120">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Starting Word (Custom Seed)</label>
+                <input type="text" id="wordchain-starting-word" class="form-input" placeholder="e.g. flame">
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 9: SERVER STATS (VOICE CHANNELS)
+               =================================================================== -->
+          <div id="pane-serverstats" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>📊</span> Server Stats Voice Counters</span>
+                <button class="btn-aura" onclick="saveServerStatsConfig()">Save Server Stats 📊</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Stats Category ID (Where voice counters reside)</label>
+                <input type="text" id="stats-category-id" class="form-input" placeholder="e.g. 1555057113687130121">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Total Members Counter Voice Channel ID</label>
+                <input type="text" id="stats-total-channel-id" class="form-input" placeholder="e.g. 1555057113687130122">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Human Members Counter Voice Channel ID</label>
+                <input type="text" id="stats-humans-channel-id" class="form-input" placeholder="e.g. 1555057113687130123">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Bot Count Counter Voice Channel ID</label>
+                <input type="text" id="stats-bots-channel-id" class="form-input" placeholder="e.g. 1555057113687130124">
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 10: SET LEVEL UP
+               =================================================================== -->
+          <div id="pane-levels" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>🆙</span> Set Level Up Announcements & Rewards</span>
+                <button class="btn-aura" onclick="saveLevelUpConfig()">Save Level Settings 🆙</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Level Celebration Channel ID</label>
+                <input type="text" id="lvl-channel-id" class="form-input" placeholder="e.g. 1555057113687130125">
+              </div>
+
+              <h4 style="color:#ff3366; font-size:1.05rem; margin:1.5rem 0 0.8rem;">Role Rewards Configuration</h4>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Level 5 Role ID</label>
+                  <input type="text" id="lvl-role-5" class="form-input" placeholder="Role ID for Level 5">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Level 10 Role ID</label>
+                  <input type="text" id="lvl-role-10" class="form-input" placeholder="Role ID for Level 10">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Level 20 Role ID</label>
+                  <input type="text" id="lvl-role-20" class="form-input" placeholder="Role ID for Level 20">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Level 50 Role ID</label>
+                  <input type="text" id="lvl-role-50" class="form-input" placeholder="Role ID for Level 50">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 11: SET EVENT ANNOUNCEMENT
+               =================================================================== -->
+          <div id="pane-events" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>📅</span> Set Event Announcement</span>
+                <button class="btn-aura" onclick="saveEventConfig()">Schedule & Announce Event 📅</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Target Event Channel ID</label>
+                <input type="text" id="event-channel-id" class="form-input" placeholder="e.g. 1555057113687130126">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Event Title</label>
+                <input type="text" id="event-title" class="form-input" placeholder="e.g. 🎮 Community Game Night">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Event Description</label>
+                <textarea id="event-desc" class="form-textarea" rows="3" placeholder="Explain event details, prizes, voice channel to join..."></textarea>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Event Start Date & Time</label>
+                  <input type="datetime-local" id="event-time" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Role Mention Ping (Optional Role ID)</label>
+                  <input type="text" id="event-ping-role" class="form-input" placeholder="Role ID or leave empty">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 12: TEMP VOICE SET
+               =================================================================== -->
+          <div id="pane-voice" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>🔊</span> Temp Voice Set (Join-to-Create)</span>
+                <button class="btn-aura" onclick="saveTempVoiceConfig()">Save Voice Hub 💾</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Join-To-Create Trigger Voice Channel ID</label>
+                <input type="text" id="cfg-voice-trigger-id" class="form-input" placeholder="e.g. 1555057113687130112">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Target Category ID</label>
+                <input type="text" id="cfg-voice-category-id" class="form-input" placeholder="e.g. 1555057113687130110">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Default Room Name Template</label>
+                <input type="text" id="cfg-voice-default-name" class="form-input" value="🔊 {user}'s Room">
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 13: INVITE TRACKER
+               =================================================================== -->
+          <div id="pane-invites" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>✉️</span> Invite Tracker</span>
+                <button class="btn-aura" onclick="saveInvitesConfig()">Save Invite Tracker ✉️</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Invite Log Alert Channel ID</label>
+                <input type="text" id="cfg-invite-channel-id" class="form-input" placeholder="e.g. 1555057113687130127">
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 14: LOGS (AUDIT / MODERATION LOGS)
+               =================================================================== -->
+          <div id="pane-logs" class="config-pane">
+            <div class="panel-card">
+              <div class="panel-header">
+                <span class="panel-header-title"><span>📋</span> Logs (Audit & Moderation)</span>
+                <button class="btn-aura" onclick="saveLogsConfig()">Save Audit Logs 📋</button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Moderation Audit Log Channel ID</label>
+                <input type="text" id="cfg-mod-log-id" class="form-input" placeholder="e.g. 1555057113687130128">
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================================================================
+               PANE 15: SECURITY SET
+               =================================================================== -->
           <div id="pane-security" class="config-pane">
             <div class="panel-card">
               <div class="panel-header">
-                <span class="panel-header-title"><span>🚨</span> Anti-Raid & Emergency Shield</span>
-                <button class="btn-aura" onclick="saveSecurityConfig()" style="padding:0.5rem 1.2rem; font-size:0.85rem;">Apply Security 🛡️</button>
+                <span class="panel-header-title"><span>🚨</span> Security Set & Anti-Raid</span>
+                <button class="btn-aura" onclick="saveSecurityConfig()">Apply Security Shield 🛡️</button>
               </div>
 
               <div class="toggle-row">
@@ -433,233 +1179,99 @@
             </div>
           </div>
 
-          <!-- PANE 3: Temp Voice Hub -->
-          <div id="pane-voice" class="config-pane">
-            <div class="panel-card">
-              <div class="panel-header">
-                <span class="panel-header-title"><span>🔊</span> Join-to-Create Voice Channels</span>
-                <button class="btn-aura" onclick="saveTempVoiceConfig()" style="padding:0.5rem 1.2rem; font-size:0.85rem;">Save Voice Hub 💾</button>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Join-To-Create Trigger Voice Channel ID</label>
-                <input type="text" id="cfg-voice-trigger-id" class="form-input" placeholder="e.g. 1555057113687130112">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Target Category ID</label>
-                <input type="text" id="cfg-voice-category-id" class="form-input" placeholder="e.g. 1555057113687130110">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Default Room Name Template</label>
-                <input type="text" id="cfg-voice-default-name" class="form-input" value="🔊 {user}'s Room">
-              </div>
-            </div>
-          </div>
-
-          <!-- PANE 4: Support Tickets -->
-          <div id="pane-tickets" class="config-pane">
-            <div class="panel-card">
-              <div class="panel-header">
-                <span class="panel-header-title"><span>🎫</span> Support Tickets Configuration</span>
-                <button class="btn-aura" onclick="saveTicketsConfig()" style="padding:0.5rem 1.2rem; font-size:0.85rem;">Save Tickets 💾</button>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Tickets Category ID</label>
-                <input type="text" id="cfg-ticket-category-id" class="form-input" placeholder="e.g. 1555057113687130120">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Support Staff Role IDs (comma-separated)</label>
-                <input type="text" id="cfg-ticket-staff-roles" class="form-input" placeholder="e.g. 1555900628809809971, 1555902019716382731">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Ticket Transcript Channel ID</label>
-                <input type="text" id="cfg-ticket-log-id" class="form-input" placeholder="e.g. 1555057113687130115">
-              </div>
-            </div>
-          </div>
-
-          <!-- PANE 5: Media Fixer -->
-          <div id="pane-media" class="config-pane">
-            <div class="panel-card">
-              <div class="panel-header">
-                <span class="panel-header-title"><span>🎥</span> Native Media Fixer Toggles</span>
-                <button class="btn-aura" onclick="saveMediaSettings()" style="padding:0.5rem 1.2rem; font-size:0.85rem;">Save Media 💾</button>
-              </div>
-
-              <div class="toggle-row">
-                <span style="color:#fff; font-weight:600;">Instagram Reels & Posts (Auto-Embed)</span>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="cfg-media-ig" checked>
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-
-              <div class="toggle-row">
-                <span style="color:#fff; font-weight:600;">TikTok Videos (Direct Stream Player)</span>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="cfg-media-tiktok" checked>
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-
-              <div class="toggle-row">
-                <span style="color:#fff; font-weight:600;">Twitter / X Media & Clips</span>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="cfg-media-twt" checked>
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-
-              <div class="toggle-row">
-                <span style="color:#fff; font-weight:600;">Reddit Videos & Galleries</span>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="cfg-media-reddit" checked>
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- PANE 6: Server Rules Board -->
-          <div id="pane-rules" class="config-pane">
-            <div class="panel-card">
-              <div class="panel-header">
-                <span class="panel-header-title"><span>📜</span> Server Rules Publisher</span>
-                <button class="btn-aura" onclick="saveRulesConfig()" style="padding:0.5rem 1.2rem; font-size:0.85rem;">Publish Rules 💾</button>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Rules List (Enter one rule per line)</label>
-                <textarea id="cfg-rules-textarea" class="form-textarea" rows="6" placeholder="1. Be respectful to all members.&#10;2. No spamming or NSFW content.&#10;3. Follow Discord Community Guidelines."></textarea>
-              </div>
-            </div>
-          </div>
-
-          <!-- PANE 7: Channels & Minigames Hub -->
-          <div id="pane-channels" class="config-pane">
-            <div class="panel-card">
-              <div class="panel-header">
-                <span class="panel-header-title"><span>📡</span> Audit Logs & Minigame Channels</span>
-                <button class="btn-aura" onclick="saveChannelsHubConfig()" style="padding:0.5rem 1.2rem; font-size:0.85rem;">Save Channels 💾</button>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Moderation Audit Log Channel ID</label>
-                <input type="text" id="cfg-mod-log-id" class="form-input" placeholder="e.g. 1555057113687130112">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Counting Minigame Channel ID</label>
-                <input type="text" id="cfg-counting-channel-id" class="form-input" placeholder="e.g. 1555057113687130113">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Level Up Announcement Channel ID</label>
-                <input type="text" id="cfg-levels-channel-id" class="form-input" placeholder="e.g. 1555057113687130114">
-              </div>
-            </div>
-          </div>
-
-          <!-- PANE 8: Embed Studio (Nekotina Message Builder Style) -->
-          <div id="pane-embed-studio" class="config-pane">
-            <div class="panel-card">
-              <div class="panel-header">
-                <span class="panel-header-title"><span>🎨</span> Live Discord Embed Message Builder</span>
-              </div>
-
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.8rem;">
-                <div>
-                  <div class="form-group">
-                    <label class="form-label">Embed Header Title</label>
-                    <input type="text" id="embed-title-input" class="form-input" value="AURA Embedded Announcement">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Embed Description / Content</label>
-                    <textarea id="embed-desc-input" class="form-textarea" rows="4">Customize and preview rich Discord messages before sending them to your server.</textarea>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Flame Accent Color</label>
-                    <input type="color" id="embed-color-input" class="form-input" value="#ff2a55" style="height:44px; padding:4px;">
-                  </div>
-                </div>
-
-                <!-- Live Discord Preview Card -->
-                <div>
-                  <label class="form-label">Discord Chat Preview</label>
-                  <div style="background:#313338; border-radius:12px; padding:1.2rem; border:1px solid rgba(255,255,255,0.08);">
-                    <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.8rem;">
-                      <img src="aura-logo.png" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" alt="AURA">
-                      <div>
-                        <strong style="color:#fff; font-size:0.95rem;">AURA</strong>
-                        <span style="background:#5865f2; color:#fff; font-size:0.6rem; padding:1px 4px; border-radius:4px; margin-left:4px;">BOT</span>
-                      </div>
-                    </div>
-                    <div id="preview-card" style="border-left:4px solid #ff2a55; background:#2b2d31; border-radius:4px; padding:0.9rem;">
-                      <h4 id="preview-title" style="color:#fff; font-size:1rem; margin-bottom:0.4rem;">AURA Embedded Announcement</h4>
-                      <p id="preview-desc" style="color:#dbdee1; font-size:0.9rem; line-height:1.5;">Customize and preview rich Discord messages before sending them to your server.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
     </section>
 
     <!-- =======================================================================
-         VIEW 5: GUIDE & WIKI (Nekotina Docs Style)
+         VIEW 5: COMMANDS CATALOG
+         ======================================================================= -->
+    <section id="view-commands" class="page-view">
+      <div class="section-header" style="margin-top: 1rem;">
+        <span class="section-tag">Command Catalog</span>
+        <h2 class="section-title">All 30 Slash Commands</h2>
+        <p class="section-desc">Search and filter AURA's unified command library.</p>
+      </div>
+
+      <div class="commands-controls">
+        <div class="search-box-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="cmd-search" class="search-input" placeholder="Search commands, descriptions or options...">
+        </div>
+
+        <div class="category-pills">
+          <button class="cat-pill-btn active" data-cat="all">All (30)</button>
+          <button class="cat-pill-btn" data-cat="Security">Security</button>
+          <button class="cat-pill-btn" data-cat="Community">Community</button>
+          <button class="cat-pill-btn" data-cat="Leveling">Leveling</button>
+          <button class="cat-pill-btn" data-cat="Voice Hub">Voice Hub</button>
+          <button class="cat-pill-btn" data-cat="Support">Support</button>
+          <button class="cat-pill-btn" data-cat="Minigames">Minigames</button>
+          <button class="cat-pill-btn" data-cat="Utility">Utility</button>
+        </div>
+      </div>
+
+      <div class="commands-grid" id="commands-container">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Commands Pagination Bar -->
+      <div class="pagination-container" id="cmd-pagination">
+        <span class="pagination-info" id="cmd-pagination-info">Showing 0 of 0 commands</span>
+        <div class="pagination-controls" id="cmd-pagination-controls">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 6: GUIDE & WIKI
          ======================================================================= -->
     <section id="view-docs" class="page-view">
       <div class="section-header" style="margin-top: 1rem;">
         <span class="section-tag">Documentation</span>
-        <h2 class="section-title">AURA Quick Setup Guide</h2>
-        <p class="section-desc">Learn how to configure permissions, modules, and commands.</p>
+        <h2 class="section-title">AURA Web & Discord Sync Guide</h2>
+        <p class="section-desc">Learn how settings changed in this web portal immediately reflect on your Discord server.</p>
       </div>
 
       <div class="modules-grid">
         <div class="module-card">
-          <h3 class="module-title">1. Invite & Administrator Rights</h3>
-          <p class="module-text">For AURA to protect against raids, mute abusers, delete malicious webhook pings, and generate temporary channels, ensure the bot role has <strong>Administrator</strong> or Manage Roles/Channels permissions.</p>
+          <h3 class="module-title">1. Instant Sync Architecture</h3>
+          <p class="module-text">Every configuration pane connects directly to the bot's data store and the Discord REST API. When you save announcements or rules, they post immediately to the targeted channel.</p>
         </div>
 
         <div class="module-card">
-          <h3 class="module-title">2. Connect via Web Dashboard</h3>
-          <p class="module-text">Log in using the <strong>⚡ Discord Login</strong> button at the top right. AURA automatically filters servers where you have Administrator rights so you can edit greeting embeds and security toggles in real time.</p>
+          <h3 class="module-title">2. Reaction Roles Limits</h3>
+          <p class="module-text">You can attach up to 25 reaction roles per embed. Enable <strong>Unique Roles</strong> if users can only pick one choice, or enter <strong>Restricted Role IDs</strong> to require specific prerequisites.</p>
         </div>
 
         <div class="module-card">
-          <h3 class="module-title">3. Instant Commands Setup</h3>
-          <p class="module-text">Use <code>/setup overview</code> in Discord to review active modules. Slash commands sync automatically to your Discord server upon bot startup.</p>
+          <h3 class="module-title">3. Leaderboard Exact Usernames</h3>
+          <p class="module-text">In strict compliance with server fairness, the XP Leaderboard displays the member's exact Discord username rather than server nicknames.</p>
         </div>
       </div>
     </section>
 
   </main>
 
-  <!-- Nekotina Style Footer -->
+  <!-- Footer -->
   <footer class="aura-footer">
     <div class="footer-inner">
       <div class="footer-brand">
         <img src="aura-logo.png" alt="AURA" class="footer-pfp">
         <div class="footer-info">
-          <h4>AURA DISCORD BOT</h4>
+          <h4>AURA DISCORD BOT & WEB HUB</h4>
           <p>Engineered with Discord.js &bull; Red & Purple Neon Flame Core</p>
         </div>
       </div>
 
       <ul class="footer-links">
         <li><a href="/" onclick="navigateTo('home', event)">Home</a></li>
-        <li><a href="/commands" onclick="navigateTo('commands', event)">Commands</a></li>
-        <li><a href="/leaderboard" onclick="navigateTo('leaderboard', event)">Leaderboard</a></li>
+        <li><a href="/login" onclick="navigateTo('login', event)">Login</a></li>
         <li><a href="/dashboard" onclick="navigateTo('dashboard', event)">Dashboard</a></li>
-        <li><a href="https://discord.com" target="_blank">Support Server</a></li>
+        <li><a href="/leaderboard" onclick="navigateTo('leaderboard', event)">Leaderboard</a></li>
+        <li><a href="/profile" onclick="navigateTo('profile', event)">Member Profile</a></li>
+        <li><a href="/commands" onclick="navigateTo('commands', event)">Commands</a></li>
       </ul>
     </div>
   </footer>

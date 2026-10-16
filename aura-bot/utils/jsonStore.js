@@ -1,26 +1,15 @@
-const fs = require("node:fs");
-const path = require("node:path");
-
-const dataFolder = path.join(__dirname, "..", "data");
+const db = require("./database");
 
 function readJson(fileName, fallback) {
-  const filePath = path.join(dataFolder, fileName);
-
-  try {
-    return JSON.parse(fs.readFileSync(filePath, "utf8"));
-  } catch {
-    return fallback;
-  }
+  return db.getData(fileName, fallback);
 }
 
 function writeJson(fileName, data) {
-  fs.mkdirSync(dataFolder, { recursive: true });
-
-  const filePath = path.join(dataFolder, fileName);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  db.setData(fileName, data);
 }
 
 module.exports = {
   readJson,
   writeJson,
+  isDbConnected: db.isDbConnected,
 };

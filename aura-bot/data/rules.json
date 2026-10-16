@@ -1,10 +1,16 @@
 [
   {
     "guildId": "1547837282109624462",
-    "channelId": "1548171871542050946",
-    "messageId": "1553722515598352467",
-    "title": "RESPECT EVERYONE",
-    "content": "Treat all members with respect. Harassment, hate speech, threats, discrimination, and targeted abuse are not allowed",
-    "createdAt": 1790506714043
+    "channelId": "1555057113687130110",
+    "messageId": "web_rules_1791839307642",
+    "title": "Official Rules",
+    "rules": [
+      {
+        "title": "Respect",
+        "content": "Be nice"
+      }
+    ],
+    "color": "#5865F2",
+    "createdAt": 1791839307642
   }
 ]

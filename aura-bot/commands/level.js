@@ -4,6 +4,9 @@ const {
   MessageFlags,
   EmbedBuilder,
   ChannelType,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
 } = require("discord.js");
 
 const {
@@ -177,9 +180,9 @@ module.exports = {
     }
 
     if (subcommand === "leaderboard") {
-      const page = interaction.options.getInteger("page") || 1;
+      let page = interaction.options.getInteger("page") || 1;
       const pageSize = 10;
-      const leaderboard = getLeaderboard(interaction.guild.id, 100);
+      const leaderboard = getLeaderboard(interaction.guild.id);
 
       if (leaderboard.length === 0) {
         return interaction.reply({
@@ -188,24 +191,97 @@ module.exports = {
       }
 
       const totalPages = Math.ceil(leaderboard.length / pageSize) || 1;
-      const currentPage = Math.min(page, totalPages);
-      const startIndex = (currentPage - 1) * pageSize;
-      const pageItems = leaderboard.slice(startIndex, startIndex + pageSize);
+      if (page > totalPages) page = totalPages;
+      if (page < 1) page = 1;
 
-      const lines = pageItems.map((entry, index) => {
-        const rank = startIndex + index + 1;
-        const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `**#${rank}**`;
-        return `${medal} <@${entry.userId}> — **Level ${entry.level}** (${entry.xp.toLocaleString()} XP)`;
+      function buildLeaderboardPayload(currPage) {
+        const startIndex = (currPage - 1) * pageSize;
+        const pageItems = leaderboard.slice(startIndex, startIndex + pageSize);
+
+        const lines = pageItems.map((entry, index) => {
+          const rank = startIndex + index + 1;
+          const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `**#${rank}**`;
+          return `${medal} <@${entry.userId}> — **Level ${entry.level}** (${entry.xp.toLocaleString()} XP)`;
+        });
+
+        const embed = new EmbedBuilder()
+          .setColor(0x9b59b6)
+          .setTitle("🏆 Server XP Leaderboard")
+          .setDescription(lines.join("\n\n"))
+          .setFooter({ text: `Page ${currPage} of ${totalPages} • Total Ranked Members: ${leaderboard.length}` })
+          .setTimestamp();
+
+        if (totalPages <= 1) {
+          return { embeds: [embed], components: [] };
+        }
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId("lb_first")
+            .setLabel("⏮️")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(currPage === 1),
+          new ButtonBuilder()
+            .setCustomId("lb_prev")
+            .setLabel("◀️ Prev")
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(currPage === 1),
+          new ButtonBuilder()
+            .setCustomId("lb_page")
+            .setLabel(`${currPage} / ${totalPages}`)
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true),
+          new ButtonBuilder()
+            .setCustomId("lb_next")
+            .setLabel("Next ▶️")
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(currPage === totalPages),
+          new ButtonBuilder()
+            .setCustomId("lb_last")
+            .setLabel("⏭️")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(currPage === totalPages)
+        );
+
+        return { embeds: [embed], components: [row] };
+      }
+
+      const reply = await interaction.reply({
+        ...buildLeaderboardPayload(page),
+        fetchReply: true,
       });
 
-      const embed = new EmbedBuilder()
-        .setColor(0x9b59b6)
-        .setTitle("🏆 Server XP Leaderboard")
-        .setDescription(lines.join("\n\n"))
-        .setFooter({ text: `Page ${currentPage} of ${totalPages} • Total Ranked Members: ${leaderboard.length}` })
-        .setTimestamp();
+      if (totalPages > 1) {
+        const collector = reply.createMessageComponentCollector({
+          time: 180000, // 3 minutes
+        });
 
-      return interaction.reply({ embeds: [embed] });
+        collector.on("collect", async (i) => {
+          if (i.user.id !== interaction.user.id) {
+            return i.reply({
+              content: "Use `/level leaderboard` to open your own interactive pagination.",
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+
+          if (i.customId === "lb_first") page = 1;
+          else if (i.customId === "lb_prev") page = Math.max(1, page - 1);
+          else if (i.customId === "lb_next") page = Math.min(totalPages, page + 1);
+          else if (i.customId === "lb_last") page = totalPages;
+
+          await i.update(buildLeaderboardPayload(page));
+        });
+
+        collector.on("end", async () => {
+          try {
+            const finalPayload = buildLeaderboardPayload(page);
+            finalPayload.components = [];
+            await reply.edit(finalPayload).catch(() => {});
+          } catch {}
+        });
+      }
+
+      return;
     }
 
     if (subcommand === "rewards") {

@@ -4,6 +4,9 @@ const {
   PermissionFlagsBits,
   MessageFlags,
   EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
 } = require("discord.js");
 
 const {
@@ -46,7 +49,8 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("upcoming")
-        .setDescription("View upcoming birthdays in this server"),
+        .setDescription("View upcoming birthdays in this server")
+        .addIntegerOption((opt) => opt.setName("page").setDescription("Page number to view").setMinValue(1)),
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -154,23 +158,125 @@ module.exports = {
 
     if (subcommand === "upcoming") {
       const all = getAllBirthdays(interaction.guild.id);
-      const entries = Object.entries(all);
+      let entries = Object.entries(all);
 
       if (entries.length === 0) {
         return interaction.reply({
-          content: "No birthdays have been registered in this server yet.",
+          content: "No birthdays have been registered in this server yet. Members can add theirs using `/birthday set <date>`!",
         });
       }
 
-      const list = entries.slice(0, 15).map(([userId, item]) => `• <@${userId}>: **${item.date}**`).join("\n");
+      // Calculate days until next birthday and sort nearest first
+      const now = new Date();
+      const currentYear = now.getFullYear();
 
-      const embed = new EmbedBuilder()
-        .setColor(0xff69b4)
-        .setTitle("🎂 Registered Server Birthdays")
-        .setDescription(list)
-        .setFooter({ text: `Total Registered: ${entries.length}` });
+      function getDaysUntil(dateText) {
+        const parts = dateText.split("/");
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        let bday = new Date(currentYear, month - 1, day);
+        if (bday < now && bday.toDateString() !== now.toDateString()) {
+          bday = new Date(currentYear + 1, month - 1, day);
+        }
+        return Math.ceil((bday - now) / (1000 * 60 * 60 * 24));
+      }
 
-      return interaction.reply({ embeds: [embed] });
+      entries.sort((a, b) => getDaysUntil(a[1].date) - getDaysUntil(b[1].date));
+
+      let page = interaction.options.getInteger("page") || 1;
+      const pageSize = 10;
+      const totalPages = Math.ceil(entries.length / pageSize) || 1;
+      if (page > totalPages) page = totalPages;
+      if (page < 1) page = 1;
+
+      function buildBirthdayPayload(currPage) {
+        const startIndex = (currPage - 1) * pageSize;
+        const pageItems = entries.slice(startIndex, startIndex + pageSize);
+
+        const lines = pageItems.map(([userId, item], index) => {
+          const days = getDaysUntil(item.date);
+          const timeText = days === 0 ? "🎉 **Today!**" : days === 1 ? "🎈 Tomorrow!" : `in **${days} days**`;
+          return `• <@${userId}>: **${item.date}** (${timeText})`;
+        });
+
+        const embed = new EmbedBuilder()
+          .setColor(0xff69b4)
+          .setTitle("🎂 Upcoming Server Birthdays")
+          .setDescription(lines.join("\n\n"))
+          .setFooter({ text: `Page ${currPage} of ${totalPages} • Total Registered: ${entries.length}` })
+          .setTimestamp();
+
+        if (totalPages <= 1) {
+          return { embeds: [embed], components: [] };
+        }
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId("bday_first")
+            .setLabel("⏮️")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(currPage === 1),
+          new ButtonBuilder()
+            .setCustomId("bday_prev")
+            .setLabel("◀️ Prev")
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(currPage === 1),
+          new ButtonBuilder()
+            .setCustomId("bday_page")
+            .setLabel(`${currPage} / ${totalPages}`)
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true),
+          new ButtonBuilder()
+            .setCustomId("bday_next")
+            .setLabel("Next ▶️")
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(currPage === totalPages),
+          new ButtonBuilder()
+            .setCustomId("bday_last")
+            .setLabel("⏭️")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(currPage === totalPages)
+        );
+
+        return { embeds: [embed], components: [row] };
+      }
+
+      const reply = await interaction.reply({
+        ...buildBirthdayPayload(page),
+        fetchReply: true,
+      });
+
+      if (totalPages > 1) {
+        const collector = reply.createMessageComponentCollector({
+          time: 180000, // 3 minutes
+        });
+
+        collector.on("collect", async (i) => {
+          if (i.user.id !== interaction.user.id) {
+            return i.reply({
+              content: "Use `/birthday upcoming` to open your own interactive pagination.",
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+
+          if (i.customId === "bday_first") page = 1;
+          else if (i.customId === "bday_prev") page = Math.max(1, page - 1);
+          else if (i.customId === "bday_next") page = Math.min(totalPages, page + 1);
+          else if (i.customId === "bday_last") page = totalPages;
+
+          await i.update(buildBirthdayPayload(page));
+        });
+
+        collector.on("end", async () => {
+          try {
+            const finalPayload = buildBirthdayPayload(page);
+            finalPayload.components = [];
+            await reply.edit(finalPayload).catch(() => {});
+          } catch {}
+        });
+      }
+
+      return;
     }
 
     // Admin Commands
