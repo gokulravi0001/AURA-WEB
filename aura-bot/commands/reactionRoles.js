@@ -135,6 +135,30 @@ async function printReactionRolePanel(interaction) {
     });
   }
 
+  const botMember = interaction.guild.members.me;
+  if (botMember && targetChannel.permissionsFor) {
+    const perms = targetChannel.permissionsFor(botMember);
+    if (perms) {
+      const required = [
+        { flag: PermissionFlagsBits.ViewChannel, name: "View Channel" },
+        { flag: PermissionFlagsBits.SendMessages, name: "Send Messages" },
+        { flag: PermissionFlagsBits.EmbedLinks, name: "Embed Links" },
+        { flag: PermissionFlagsBits.AddReactions, name: "Add Reactions" },
+        { flag: PermissionFlagsBits.ManageMessages, name: "Manage Messages (Needed for One-Choice reaction swapping)" },
+      ];
+      const missing = required.filter((r) => !perms.has(r.flag));
+      if (missing.length > 0) {
+        return interaction.editReply({
+          content:
+            `❌ **AURA is missing permissions in ${targetChannel}!**\n\n` +
+            `Please open channel settings for ${targetChannel} → **Permissions** → Add/Edit **AURA** and enable:\n` +
+            missing.map((m) => `• **${m.name}**`).join("\n") +
+            `\n\n*(Or specify a channel where AURA has full permissions: \`/reaction-role print channel:#roles\`)*`,
+        });
+      }
+    }
+  }
+
   try {
     const embed = makeEmbed(panel);
     const postedMsg = await targetChannel.send({ embeds: [embed] });
