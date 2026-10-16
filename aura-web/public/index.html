@@ -724,20 +724,43 @@
               <div id="rr-items-container" style="display: flex; flex-direction: column; gap: 0.8rem;">
                 <!-- Dynamically populated up to 25 items -->
               </div>
+
+              <!-- ACTIVE REACTION PANELS EXPLORER (/reaction-role list) -->
+              <div style="margin-top: 1.8rem; border-top: 1px solid rgba(255,42,85,0.25); padding-top: 1.2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                  <h4 style="color:#9900ff; font-size:1.05rem; margin:0; font-weight:800;">
+                    🎭 Active Reaction Role Panels in Server (<code>/reaction-role list</code>)
+                  </h4>
+                  <button type="button" class="btn-aura-outline" onclick="loadActiveReactionPanels()" style="padding: 0.35rem 0.8rem; font-size: 0.78rem;">
+                    🔄 Refresh Panels
+                  </button>
+                </div>
+                <div id="rr-active-panels-container" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                  <!-- Dynamically populated by app.js -->
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- ===================================================================
-               PANE 4: SET WELCOME AND BYE EMBED
+               PANE 4: SET WELCOME AND BYE EMBED & LIVE DISCORD DISPATCH
                =================================================================== -->
           <div id="pane-greetings" class="config-pane">
             <div class="panel-card">
-              <div class="panel-header">
-                <span class="panel-header-title"><span>👋</span> Set Welcome & Bye Embed</span>
-                <button class="btn-aura" onclick="saveGreetingsConfig()">Save Greetings 💾</button>
+              <div class="panel-header" style="flex-wrap: wrap; gap: 0.8rem;">
+                <span class="panel-header-title"><span>👋</span> Greetings Suite (/greetings suite)</span>
+                <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+                  <button type="button" class="btn-aura-outline" onclick="sendTestWelcomeAction()" style="border-color: #ff0000; color: #fff;">
+                    🚀 Test Welcome in Discord
+                  </button>
+                  <button type="button" class="btn-aura-outline" onclick="sendTestGoodbyeAction()" style="border-color: #9900ff; color: #fff;">
+                    🚀 Test Goodbye in Discord
+                  </button>
+                  <button class="btn-aura" onclick="saveGreetingsConfig()">Save Greetings 💾</button>
+                </div>
               </div>
 
-              <h4 style="color:#ff3366; font-size:1.05rem; margin-bottom:0.8rem;">Welcome Embed Configuration</h4>
+              <h4 style="color:#ff0000; font-size:1.05rem; margin-bottom:0.8rem; font-weight:800;">Welcome Embed Configuration</h4>
               <div class="form-group">
                 <label class="form-label">Welcome Channel ID</label>
                 <input type="text" id="cfg-welcome-channel-id" class="form-input" placeholder="e.g. 1555057113687130113">
@@ -756,12 +779,12 @@
 
               <div class="form-group">
                 <label class="form-label">Welcome Embed Color</label>
-                <input type="color" id="cfg-welcome-color" class="form-input" value="#ff2a55" style="height:44px; padding:4px;">
+                <input type="color" id="cfg-welcome-color" class="form-input" value="#ff0000" style="height:44px; padding:4px;">
               </div>
 
               <hr style="border:0; border-top:1px solid rgba(255,42,85,0.2); margin:1.8rem 0;">
 
-              <h4 style="color:#b300ff; font-size:1.05rem; margin-bottom:0.8rem;">Goodbye / Farewell Embed (Optional)</h4>
+              <h4 style="color:#9900ff; font-size:1.05rem; margin-bottom:0.8rem; font-weight:800;">Goodbye / Farewell Embed</h4>
               <div class="form-group">
                 <label class="form-label">Goodbye Channel ID</label>
                 <input type="text" id="cfg-bye-channel-id" class="form-input" placeholder="e.g. 1555057113687130114">
@@ -779,18 +802,18 @@
 
               <div class="form-group">
                 <label class="form-label">Goodbye Embed Color</label>
-                <input type="color" id="cfg-bye-color" class="form-input" value="#9d00ff" style="height:44px; padding:4px;">
+                <input type="color" id="cfg-bye-color" class="form-input" value="#9900ff" style="height:44px; padding:4px;">
               </div>
             </div>
           </div>
 
           <!-- ===================================================================
-               PANE 5: SET STICKY MESSAGE
+               PANE 5: SET STICKY MESSAGE & ACTIVE STICKIES SUITE
                =================================================================== -->
           <div id="pane-sticky" class="config-pane">
             <div class="panel-card">
               <div class="panel-header">
-                <span class="panel-header-title"><span>📌</span> Set Sticky Message</span>
+                <span class="panel-header-title"><span>📌</span> Sticky Messages Suite (/sticky suite)</span>
                 <button class="btn-aura" onclick="saveStickyConfig()">Set Sticky Message 📌</button>
               </div>
 
@@ -814,6 +837,21 @@
               <div class="form-group">
                 <label class="form-label">Embed Header Title (If Embed Enabled)</label>
                 <input type="text" id="sticky-title" class="form-input" value="📌 Sticky Notice">
+              </div>
+
+              <!-- ACTIVE STICKIES EXPLORER (/sticky list) -->
+              <div style="margin-top: 1.8rem; border-top: 1px solid rgba(255,42,85,0.25); padding-top: 1.2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                  <h4 style="color:#ff0000; font-size:1.05rem; margin:0; font-weight:800;">
+                    📌 Active Stickies in Server (<code>/sticky list</code>)
+                  </h4>
+                  <button type="button" class="btn-aura-outline" onclick="loadActiveStickies()" style="padding: 0.35rem 0.8rem; font-size: 0.78rem;">
+                    🔄 Refresh Stickies
+                  </button>
+                </div>
+                <div id="sticky-active-container" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                  <!-- Dynamically populated by app.js -->
+                </div>
               </div>
             </div>
           </div>
@@ -850,27 +888,85 @@
           </div>
 
           <!-- ===================================================================
-               PANE 7: SET BIRTHDAY CHANNELS
+               PANE 7: SET BIRTHDAY CHANNELS & FULL COMMAND SUITE
                =================================================================== -->
           <div id="pane-birthday" class="config-pane">
             <div class="panel-card">
-              <div class="panel-header">
-                <span class="panel-header-title"><span>🎂</span> Set Birthday Channels</span>
-                <button class="btn-aura" onclick="saveBirthdayConfig()">Save Birthday Settings 🎂</button>
+              <div class="panel-header" style="flex-wrap: wrap; gap: 0.8rem;">
+                <span class="panel-header-title"><span>🎂</span> Birthday Command Center (/birthday suite)</span>
+                <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+                  <button type="button" class="btn-aura-outline" onclick="announceBirthdaysNow()" style="background: linear-gradient(135deg, rgba(255,0,0,0.2), rgba(153,0,255,0.2)); border-color: #ff0000; color: #fff;">
+                    🎉 Announce Today's Birthdays Now
+                  </button>
+                  <button class="btn-aura" onclick="saveBirthdayConfig()">Save Birthday Settings 🎂</button>
+                </div>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Birthday Input Channel ID (Where members type birthdays)</label>
-                <input type="text" id="bday-input-channel-id" class="form-input" placeholder="e.g. 1555057113687130117">
+              <!-- FEATURE 1: INSPECT MEMBER BIRTHDAY (/birthday show <user>) -->
+              <div style="background: rgba(0,0,0,0.5); border: var(--border-aura); border-radius: 14px; padding: 1.2rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+                  <h4 style="color:#ff0000; font-size: 1.05rem; margin: 0; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🔍</span> Inspect Member Birthday (<code>/birthday show</code>)
+                  </h4>
+                  <span style="font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono);">View days left & age</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.83rem; margin-bottom: 0.9rem;">Lookup any member's saved birthday, verified status, and exact countdown to their celebration.</p>
+                
+                <div style="display: flex; gap: 0.8rem; align-items: center;">
+                  <input type="text" id="bday-lookup-id" class="form-input" style="flex: 1;" placeholder="Enter Discord User ID (e.g. 1544034105006620759)">
+                  <button type="button" class="btn-aura" onclick="lookupUserBirthday()" style="padding: 0.7rem 1.4rem; white-space: nowrap;">
+                    Inspect Birthday 🔍
+                  </button>
+                </div>
+
+                <div id="bday-lookup-result" style="display: none; margin-top: 1rem; padding: 1.2rem; background: rgba(255, 0, 0, 0.08); border-radius: 12px; border: 1px solid rgba(255, 0, 0, 0.35);">
+                  <!-- Dynamically populated by app.js -->
+                </div>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Birthday Announcement Channel ID (Where bot celebrates)</label>
-                <input type="text" id="bday-announce-channel-id" class="form-input" placeholder="e.g. 1555057113687130118">
+              <!-- FEATURE 2: SET MEMBER BIRTHDAY (/birthday set-user <user> <date>) -->
+              <div style="background: rgba(0,0,0,0.5); border: var(--border-purple); border-radius: 14px; padding: 1.2rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+                  <h4 style="color:#9900ff; font-size: 1.05rem; margin: 0; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🎂</span> Set Member Birthday (<code>/birthday set-user</code>)
+                  </h4>
+                  <span style="font-size: 0.75rem; color: #cc66ff; font-family: var(--font-mono);">Immediate DB sync</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.83rem; margin-bottom: 0.9rem;">Directly save or update any server member's birthday in MongoDB Atlas.</p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.8rem; align-items: end;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Member Discord ID</label>
+                    <input type="text" id="bday-set-userid" class="form-input" placeholder="e.g. 1544034105006620759">
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Birthday Date (DD/MM or DD/MM/YYYY)</label>
+                    <input type="text" id="bday-set-date" class="form-input" placeholder="e.g. 24/05 or 15/08/2004">
+                  </div>
+                  <button type="button" class="btn-aura" onclick="submitQuickBirthday()" style="padding: 0.75rem 1.4rem; white-space: nowrap;">
+                    Save Birthday 🎂
+                  </button>
+                </div>
               </div>
 
-              <!-- Registered & Upcoming Birthdays Explorer -->
-              <div style="margin-top: 2rem; border-top: 1px solid rgba(255,42,85,0.25); padding-top: 1.5rem;">
+              <!-- FEATURE 3: BIRTHDAY CHANNEL SETUP (/birthday setup) -->
+              <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 1.2rem; margin-bottom: 1.5rem;">
+                <h4 style="color:#fff; font-size: 1.05rem; margin-bottom: 0.8rem; font-weight: 800;">
+                  ⚙️ Birthday Channel Configuration (<code>/birthday setup</code>)
+                </h4>
+                <div class="form-group">
+                  <label class="form-label">Birthday Input Channel ID (Where members type birthdays)</label>
+                  <input type="text" id="bday-input-channel-id" class="form-input" placeholder="e.g. 1555057113687130117">
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Birthday Announcement Channel ID (Where bot celebrates)</label>
+                  <input type="text" id="bday-announce-channel-id" class="form-input" placeholder="e.g. 1555057113687130118">
+                </div>
+              </div>
+
+              <!-- FEATURE 4: REGISTERED & UPCOMING BIRTHDAYS EXPLORER (/birthday upcoming / list) -->
+              <div style="margin-top: 1.5rem; border-top: 1px solid rgba(255,42,85,0.25); padding-top: 1.5rem;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem;">
                   <div>
                     <h4 style="color:#ff69b4; font-size:1.15rem; margin:0; font-weight:800;">🎂 Upcoming & Registered Server Birthdays</h4>
@@ -916,52 +1012,136 @@
           </div>
 
           <!-- ===================================================================
-               PANE 8: SET COUNTING & WORD CHAIN
+               PANE 8: SET COUNTING & WORD CHAIN (LIVE STATUS & SERVER CONTROL)
                =================================================================== -->
           <div id="pane-minigames" class="config-pane">
             <div class="panel-card">
               <div class="panel-header">
-                <span class="panel-header-title"><span>🔢</span> Set Counting & Word Chain Minigames</span>
+                <span class="panel-header-title"><span>🔢</span> Minigames Suite (/counting & /wordbuilding)</span>
                 <button class="btn-aura" onclick="saveMinigamesConfig()">Save Minigames Settings 🔢</button>
               </div>
 
-              <h4 style="color:#ff3366; font-size:1.05rem; margin-bottom:0.8rem;">1. Counting Minigame</h4>
-              <div class="form-group">
-                <label class="form-label">Counting Channel ID</label>
-                <input type="text" id="counting-channel-id" class="form-input" placeholder="e.g. 1555057113687130119">
+              <!-- 1. COUNTING LIVE STATUS & SERVER CONTROLS -->
+              <div style="background: rgba(255, 0, 0, 0.06); border: var(--border-aura); border-radius: 14px; padding: 1.2rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.5rem;">
+                  <div>
+                    <h4 style="color:#ff0000; font-size:1.1rem; margin:0; font-weight:800;">1. Counting Minigame (Live Server Control)</h4>
+                    <p style="color: var(--text-dim); font-size: 0.8rem;">Real-time channel stats and instant reset/set actions.</p>
+                  </div>
+                  <button type="button" class="btn-aura-outline" onclick="resetCountingGame()" style="padding: 0.45rem 0.9rem; font-size: 0.8rem; color: #ff6666; border-color: #ff0000;">
+                    🔄 Reset Count to 0 (/counting reset)
+                  </button>
+                </div>
+
+                <!-- Live Counting Stats Cards -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.9rem; margin-bottom: 1.2rem;">
+                  <div style="background: #000; border: 1px solid rgba(255,0,0,0.35); border-radius: 10px; padding: 0.9rem; text-align: center;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Current Count</div>
+                    <div id="counting-live-current" style="font-size: 1.8rem; font-weight: 900; color: #fff;">0</div>
+                  </div>
+                  <div style="background: #000; border: 1px solid rgba(255,0,0,0.35); border-radius: 10px; padding: 0.9rem; text-align: center;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Server High Score</div>
+                    <div id="counting-live-highscore" style="font-size: 1.8rem; font-weight: 900; color: #00ffa6;">0</div>
+                  </div>
+                  <div style="background: #000; border: 1px solid rgba(255,0,0,0.35); border-radius: 10px; padding: 0.9rem; text-align: center;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Last Counter</div>
+                    <div id="counting-live-lastuser" style="font-size: 0.95rem; font-weight: 700; color: #ffaa00; margin-top: 0.5rem; font-family: var(--font-mono);">None</div>
+                  </div>
+                </div>
+
+                <!-- Set Count Number Direct Action (/counting set) -->
+                <div style="display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1.2rem; background: rgba(0,0,0,0.5); padding: 0.8rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap;">
+                  <span style="font-size: 0.85rem; color: #fff; font-weight: 600; white-space: nowrap;">Set Count Number (<code>/counting set</code>):</span>
+                  <input type="number" id="counting-set-input" class="form-input" style="width: 130px;" placeholder="e.g. 50">
+                  <button type="button" class="btn-aura" onclick="setCountingNumberAction()" style="padding: 0.55rem 1.1rem; font-size: 0.85rem;">
+                    Update Count in Server 🎯
+                  </button>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Counting Channel ID (<code>/counting setup</code>)</label>
+                  <input type="text" id="counting-channel-id" class="form-input" placeholder="e.g. 1555057113687130119">
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Counting Custom Mode (<code>/counting mode</code>)</label>
+                  <select id="counting-mode" class="form-input">
+                    <option value="allow_chat">Allow Chat Messages Alongside Numbers</option>
+                    <option value="strict">Strict Numbers Only (Deletes chat text)</option>
+                  </select>
+                </div>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Counting Custom Mode</label>
-                <select id="counting-mode" class="form-input">
-                  <option value="allow_chat">Allow Chat Messages Alongside Numbers</option>
-                  <option value="strict">Strict Numbers Only (Deletes chat text)</option>
-                </select>
-              </div>
+              <!-- 2. WORD CHAIN LIVE STATUS & SERVER CONTROLS -->
+              <div style="background: rgba(153, 0, 255, 0.06); border: var(--border-purple); border-radius: 14px; padding: 1.2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.5rem;">
+                  <div>
+                    <h4 style="color:#9900ff; font-size:1.1rem; margin:0; font-weight:800;">2. Word Chain Minigame (Live Server Control)</h4>
+                    <p style="color: var(--text-dim); font-size: 0.8rem;">Shiritori streak tracker and instant chain reset.</p>
+                  </div>
+                  <button type="button" class="btn-aura-outline" onclick="resetWordChainGame()" style="padding: 0.45rem 0.9rem; font-size: 0.8rem; color: #bb66ff; border-color: #9900ff;">
+                    🔄 Reset Word Chain (/wordbuilding reset)
+                  </button>
+                </div>
 
-              <hr style="border:0; border-top:1px solid rgba(255,42,85,0.2); margin:1.8rem 0;">
+                <!-- Live Word Chain Stats Cards -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.9rem; margin-bottom: 1.2rem;">
+                  <div style="background: #000; border: 1px solid rgba(153,0,255,0.35); border-radius: 10px; padding: 0.9rem; text-align: center;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Current Word</div>
+                    <div id="wordchain-live-current" style="font-size: 1.6rem; font-weight: 900; color: #fff;">flame</div>
+                  </div>
+                  <div style="background: #000; border: 1px solid rgba(153,0,255,0.35); border-radius: 10px; padding: 0.9rem; text-align: center;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Next Starting Letter</div>
+                    <div id="wordchain-live-nextletter" style="font-size: 1.8rem; font-weight: 900; color: #00ffa6;">E</div>
+                  </div>
+                  <div style="background: #000; border: 1px solid rgba(153,0,255,0.35); border-radius: 10px; padding: 0.9rem; text-align: center;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Current Streak</div>
+                    <div id="wordchain-live-streak" style="font-size: 1.8rem; font-weight: 900; color: #ffaa00;">0</div>
+                  </div>
+                </div>
 
-              <h4 style="color:#b300ff; font-size:1.05rem; margin-bottom:0.8rem;">2. Word Chain Minigame</h4>
-              <div class="form-group">
-                <label class="form-label">Word Chain Channel ID</label>
-                <input type="text" id="wordchain-channel-id" class="form-input" placeholder="e.g. 1555057113687130120">
-              </div>
+                <div class="form-group">
+                  <label class="form-label">Word Chain Channel ID (<code>/wordbuilding setup</code>)</label>
+                  <input type="text" id="wordchain-channel-id" class="form-input" placeholder="e.g. 1555057113687130120">
+                </div>
 
-              <div class="form-group">
-                <label class="form-label">Starting Word (Custom Seed)</label>
-                <input type="text" id="wordchain-starting-word" class="form-input" placeholder="e.g. flame">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Starting Word (Custom Seed)</label>
+                  <input type="text" id="wordchain-starting-word" class="form-input" placeholder="e.g. flame">
+                </div>
               </div>
             </div>
           </div>
 
           <!-- ===================================================================
-               PANE 9: SERVER STATS (VOICE CHANNELS)
+               PANE 9: SERVER STATS (VOICE CHANNELS & REAL-TIME DISCORD SYNC)
                =================================================================== -->
           <div id="pane-serverstats" class="config-pane">
             <div class="panel-card">
-              <div class="panel-header">
-                <span class="panel-header-title"><span>📊</span> Server Stats Voice Counters</span>
-                <button class="btn-aura" onclick="saveServerStatsConfig()">Save Server Stats 📊</button>
+              <div class="panel-header" style="flex-wrap: wrap; gap: 0.8rem;">
+                <span class="panel-header-title"><span>📊</span> Server Stats Voice Counters (/serverstats)</span>
+                <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+                  <button type="button" class="btn-aura-outline" onclick="forceSyncServerStatsNow()" style="background: rgba(255,0,0,0.15); border-color: #ff0000; color: #fff;">
+                    ⚡ Force Update Voice Channels in Discord Now
+                  </button>
+                  <button class="btn-aura" onclick="saveServerStatsConfig()">Save Server Stats 📊</button>
+                </div>
+              </div>
+
+              <!-- Live Server Member Preview Cards -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="background: #000; border: var(--border-aura); border-radius: 12px; padding: 1rem; text-align: center;">
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">📊 Total Tracked Members</span>
+                  <h3 id="stats-live-total" style="color: #fff; font-size: 1.8rem; font-weight: 900; margin-top: 0.3rem;">--</h3>
+                </div>
+                <div style="background: #000; border: var(--border-aura); border-radius: 12px; padding: 1rem; text-align: center;">
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">👤 Human Members</span>
+                  <h3 id="stats-live-humans" style="color: #00ffa6; font-size: 1.8rem; font-weight: 900; margin-top: 0.3rem;">--</h3>
+                </div>
+                <div style="background: #000; border: var(--border-aura); border-radius: 12px; padding: 1rem; text-align: center;">
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">🤖 Bot Count</span>
+                  <h3 id="stats-live-bots" style="color: #9900ff; font-size: 1.8rem; font-weight: 900; margin-top: 0.3rem;">--</h3>
+                </div>
               </div>
 
               <div class="form-group">
@@ -987,38 +1167,143 @@
           </div>
 
           <!-- ===================================================================
-               PANE 10: SET LEVEL UP
+               PANE 10: SET LEVEL UP & COMPLETE LEVEL MANAGEMENT SUITE
                =================================================================== -->
           <div id="pane-levels" class="config-pane">
             <div class="panel-card">
-              <div class="panel-header">
-                <span class="panel-header-title"><span>🆙</span> Set Level Up Announcements & Rewards</span>
-                <button class="btn-aura" onclick="saveLevelUpConfig()">Save Level Settings 🆙</button>
+              <div class="panel-header" style="flex-wrap: wrap; gap: 0.8rem;">
+                <span class="panel-header-title"><span>🆙</span> Leveling Suite (/level suite)</span>
+                <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+                  <button type="button" class="btn-aura-outline" onclick="navigateTo('leaderboard')" style="border-color: #9900ff; color: #fff;">
+                    🏆 View Live Leaderboard
+                  </button>
+                  <button class="btn-aura" onclick="saveLevelUpConfig()">Save Level Settings 🆙</button>
+                </div>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Level Celebration Channel ID</label>
-                <input type="text" id="lvl-channel-id" class="form-input" placeholder="e.g. 1555057113687130125">
+              <!-- FEATURE 1: INSPECT MEMBER LEVEL (/level show <user>) -->
+              <div style="background: rgba(0,0,0,0.5); border: var(--border-aura); border-radius: 14px; padding: 1.2rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+                  <h4 style="color:#ff0000; font-size: 1.05rem; margin: 0; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🔍</span> Inspect Member Level & XP (<code>/level show</code>)
+                  </h4>
+                  <span style="font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono);">Rank & XP Calculator</span>
+                </div>
+                <div style="display: flex; gap: 0.8rem; align-items: center;">
+                  <input type="text" id="lvl-lookup-id" class="form-input" style="flex: 1;" placeholder="Enter Discord User ID (e.g. 1544034105006620759)">
+                  <button type="button" class="btn-aura" onclick="lookupMemberLevel()" style="padding: 0.7rem 1.4rem; white-space: nowrap;">
+                    Inspect Level 🔍
+                  </button>
+                </div>
+
+                <div id="lvl-lookup-result" style="display: none; margin-top: 1rem; padding: 1.2rem; background: rgba(255, 0, 0, 0.08); border-radius: 12px; border: 1px solid rgba(255, 0, 0, 0.35);">
+                  <!-- Populated dynamically -->
+                </div>
               </div>
 
-              <h4 style="color:#ff3366; font-size:1.05rem; margin:1.5rem 0 0.8rem;">Role Rewards Configuration</h4>
-              
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div class="form-group">
-                  <label class="form-label">Level 5 Role ID</label>
-                  <input type="text" id="lvl-role-5" class="form-input" placeholder="Role ID for Level 5">
+              <!-- FEATURE 2: SERVER XP & LEVEL MODIFIERS (ALTERS DISCORD & DB IN REAL-TIME) -->
+              <div style="background: rgba(153, 0, 255, 0.06); border: var(--border-purple); border-radius: 14px; padding: 1.2rem; margin-bottom: 1.5rem;">
+                <h4 style="color:#9900ff; font-size: 1.05rem; margin-bottom: 0.5rem; font-weight: 800;">
+                  ⚡ Live Server XP & Level Controls (Real-Time Modifiers)
+                </h4>
+                <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 1.2rem;">Modify members' XP and ranks immediately across the database and Discord leaderboards.</p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                  <!-- Add XP -->
+                  <div style="background: #000; border: 1px solid rgba(255,0,0,0.3); border-radius: 10px; padding: 1rem;">
+                    <strong style="color: #00ffa6; font-size: 0.9rem; display: block; margin-bottom: 0.6rem;">➕ Add XP to Member</strong>
+                    <div class="form-group" style="margin-bottom: 0.6rem;">
+                      <input type="text" id="xp-add-userid" class="form-input" placeholder="User ID">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.6rem;">
+                      <input type="number" id="xp-add-amount" class="form-input" placeholder="XP Amount (e.g. 500)">
+                    </div>
+                    <button type="button" class="btn-aura" style="width: 100%; justify-content: center; padding: 0.6rem;" onclick="addMemberXpAction()">
+                      Add XP ➕
+                    </button>
+                  </div>
+
+                  <!-- Deduct XP -->
+                  <div style="background: #000; border: 1px solid rgba(255,0,0,0.3); border-radius: 10px; padding: 1rem;">
+                    <strong style="color: #ffaa00; font-size: 0.9rem; display: block; margin-bottom: 0.6rem;">➖ Deduct XP from Member</strong>
+                    <div class="form-group" style="margin-bottom: 0.6rem;">
+                      <input type="text" id="xp-remove-userid" class="form-input" placeholder="User ID">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.6rem;">
+                      <input type="number" id="xp-remove-amount" class="form-input" placeholder="XP Amount (e.g. 250)">
+                    </div>
+                    <button type="button" class="btn-aura-outline" style="width: 100%; justify-content: center; padding: 0.6rem; color:#ffaa00; border-color:#ffaa00;" onclick="removeMemberXpAction()">
+                      Deduct XP ➖
+                    </button>
+                  </div>
+
+                  <!-- Set Exact Level -->
+                  <div style="background: #000; border: 1px solid rgba(153,0,255,0.3); border-radius: 10px; padding: 1rem;">
+                    <strong style="color: #9900ff; font-size: 0.9rem; display: block; margin-bottom: 0.6rem;">🎯 Directly Set Member Level</strong>
+                    <div class="form-group" style="margin-bottom: 0.6rem;">
+                      <input type="text" id="lvl-set-userid" class="form-input" placeholder="User ID">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.6rem;">
+                      <input type="number" id="lvl-set-number" class="form-input" placeholder="Target Level (e.g. 10)">
+                    </div>
+                    <button type="button" class="btn-aura" style="width: 100%; justify-content: center; padding: 0.6rem;" onclick="setMemberLevelAction()">
+                      Set Level 🎯
+                    </button>
+                  </div>
+
+                  <!-- Reset Member Level -->
+                  <div style="background: #000; border: 1px solid rgba(255,42,85,0.3); border-radius: 10px; padding: 1rem;">
+                    <strong style="color: #ff4d88; font-size: 0.9rem; display: block; margin-bottom: 0.6rem;">🔄 Reset Member XP to 0</strong>
+                    <div class="form-group" style="margin-bottom: 0.6rem;">
+                      <input type="text" id="lvl-reset-userid" class="form-input" placeholder="User ID">
+                    </div>
+                    <button type="button" class="btn-aura-outline" style="width: 100%; justify-content: center; padding: 0.6rem; margin-top: 2rem; color:#ff4d88; border-color:#ff4d88;" onclick="resetMemberLevelAction()">
+                      Reset Member to 0 🔄
+                    </button>
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Level 10 Role ID</label>
-                  <input type="text" id="lvl-role-10" class="form-input" placeholder="Role ID for Level 10">
+
+                <!-- Emergency Reset All Levels -->
+                <div style="margin-top: 1rem; padding: 0.9rem; background: rgba(255,0,0,0.12); border-radius: 10px; border: 1px solid #ff0000; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.8rem;">
+                  <div>
+                    <strong style="color: #ff0000; font-size: 0.9rem;">🚨 Emergency Server Level Reset</strong>
+                    <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Reset all members' XP and levels in this server back to 0. Cannot be undone.</span>
+                  </div>
+                  <button type="button" class="btn-aura" style="background: #cc0000; padding: 0.5rem 1.2rem; font-size: 0.82rem;" onclick="resetAllServerLevelsAction()">
+                    🚨 Reset ALL Members Levels
+                  </button>
                 </div>
+              </div>
+
+              <!-- FEATURE 3: CONFIGURATION (CHANNEL & ROLE REWARDS) -->
+              <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 1.2rem;">
+                <h4 style="color:#fff; font-size: 1.05rem; margin-bottom: 0.8rem; font-weight: 800;">
+                  ⚙️ Level Announcement & Role Rewards (<code>/level setup & /level rewards</code>)
+                </h4>
                 <div class="form-group">
-                  <label class="form-label">Level 20 Role ID</label>
-                  <input type="text" id="lvl-role-20" class="form-input" placeholder="Role ID for Level 20">
+                  <label class="form-label">Level Celebration Channel ID</label>
+                  <input type="text" id="lvl-channel-id" class="form-input" placeholder="e.g. 1555057113687130125">
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Level 50 Role ID</label>
-                  <input type="text" id="lvl-role-50" class="form-input" placeholder="Role ID for Level 50">
+
+                <h5 style="color:#ff0000; font-size:0.95rem; margin:1.2rem 0 0.8rem;">Role Rewards Configuration</h5>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                  <div class="form-group">
+                    <label class="form-label">Level 5 Role ID</label>
+                    <input type="text" id="lvl-role-5" class="form-input" placeholder="Role ID for Level 5">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Level 10 Role ID</label>
+                    <input type="text" id="lvl-role-10" class="form-input" placeholder="Role ID for Level 10">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Level 20 Role ID</label>
+                    <input type="text" id="lvl-role-20" class="form-input" placeholder="Role ID for Level 20">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Level 50 Role ID</label>
+                    <input type="text" id="lvl-role-50" class="form-input" placeholder="Role ID for Level 50">
+                  </div>
                 </div>
               </div>
             </div>
@@ -1166,15 +1451,20 @@
                 </label>
               </div>
 
-              <div class="toggle-row" style="border-color: #ff2a55; background: rgba(255,42,85,0.12);">
+              <!-- LIVE EMERGENCY LOCKDOWN TRIGGER (DISCORD REST REAL-TIME PERMISSIONS) -->
+              <div style="margin-top: 1.2rem; padding: 1.2rem; background: rgba(255,0,0,0.14); border-radius: 12px; border: 1px solid #ff0000; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <div>
-                  <strong style="color:#ff3366; display:block;">🚨 Full Emergency Server Lockdown</strong>
-                  <span style="font-size:0.8rem; color:var(--text-muted);">Locks all public channels immediately. Only administrators can send messages.</span>
+                  <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <strong style="color: #ff0000; font-size: 1.05rem;">🚨 Real-Time Emergency Server Lockdown</strong>
+                    <span id="lockdown-status-badge" style="background: rgba(255,0,0,0.3); color: #fff; font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; font-weight: 700;">STANDBY</span>
+                  </div>
+                  <span style="font-size:0.8rem; color:var(--text-muted); display:block; margin-top:0.3rem;">
+                    Instantly revokes message sending rights for @everyone across all public channels in Discord.
+                  </span>
                 </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="cfg-toggle-lockdown">
-                  <span class="toggle-slider"></span>
-                </label>
+                <button type="button" class="btn-aura" style="background: #ff0000; box-shadow: 0 0 20px rgba(255,0,0,0.6); padding: 0.7rem 1.4rem;" onclick="toggleEmergencyLockdownAction()">
+                  🚨 Toggle Server Lockdown Now
+                </button>
               </div>
             </div>
           </div>

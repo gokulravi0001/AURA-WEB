@@ -1,44 +1,24 @@
-const fs = require("node:fs");
-const path = require("node:path");
 const { EmbedBuilder } = require("discord.js");
 const { fetchChannel } = require("../utils/helpers");
-
-const dataFile = path.join(__dirname, "..", "data", "invite-data.json");
-const settingsFile = path.join(__dirname, "..", "data", "invite-settings.json");
+const { readJson, writeJson } = require("../utils/jsonStore");
 
 const inviteCache = new Map();
 const joinQueues = new Map();
 
 function readData() {
-  try {
-    if (!fs.existsSync(dataFile)) return {};
-    const raw = JSON.parse(fs.readFileSync(dataFile, "utf8"));
-    // Ensure structure supports both joins array and bonus map
-    return raw && typeof raw === "object" ? raw : {};
-  } catch (error) {
-    console.error("Could not read invite data:", error);
-    return {};
-  }
+  return readJson("invite-data.json", {});
 }
 
 function writeData(data) {
-  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
-  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+  writeJson("invite-data.json", data);
 }
 
 function readSettings() {
-  try {
-    if (!fs.existsSync(settingsFile)) return {};
-    return JSON.parse(fs.readFileSync(settingsFile, "utf8"));
-  } catch (error) {
-    console.error("Could not read invite announcement settings:", error);
-    return {};
-  }
+  return readJson("invite-settings.json", {});
 }
 
 function writeSettings(settings) {
-  fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
-  fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+  writeJson("invite-settings.json", settings);
 }
 
 function getInviteAnnouncementChannel(guildId) {

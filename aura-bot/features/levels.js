@@ -1,31 +1,18 @@
-const fs = require("node:fs");
-const path = require("node:path");
 const { ActivityType, EmbedBuilder } = require("discord.js");
+const { readJson, writeJson } = require("../utils/jsonStore");
 
-const dataFile = path.join(__dirname, "..", "data", "level-data.json");
 const messageCooldowns = new Map();
 
 function readData() {
-  try {
-    if (!fs.existsSync(dataFile)) {
-      return { settings: {}, users: {} };
-    }
-
-    const data = JSON.parse(fs.readFileSync(dataFile, "utf8"));
-
-    return {
-      settings: data.settings || {},
-      users: data.users || {},
-    };
-  } catch (error) {
-    console.error("Could not read level data:", error);
-    return { settings: {}, users: {} };
-  }
+  const data = readJson("level-data.json", { settings: {}, users: {} });
+  return {
+    settings: data.settings || {},
+    users: data.users || {},
+  };
 }
 
 function writeData(data) {
-  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
-  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+  writeJson("level-data.json", data);
 }
 
 // Level 1 needs 100 total XP; each next level needs more.

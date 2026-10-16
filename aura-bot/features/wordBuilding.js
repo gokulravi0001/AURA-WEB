@@ -1,21 +1,11 @@
-const fs = require("node:fs");
-const path = require("node:path");
-
-const dataFile = path.join(__dirname, "..", "data", "word-building-data.json");
+const { readJson, writeJson } = require("../utils/jsonStore");
 
 function readData() {
-  try {
-    if (!fs.existsSync(dataFile)) return {};
-    return JSON.parse(fs.readFileSync(dataFile, "utf8"));
-  } catch (error) {
-    console.error("Could not read word-building data:", error);
-    return {};
-  }
+  return readJson("word-building-data.json", {});
 }
 
 function writeData(data) {
-  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
-  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+  writeJson("word-building-data.json", data);
 }
 
 function saveWordBuildingChannel(guildId, channelId) {

@@ -1,32 +1,13 @@
-const fs = require("node:fs");
-const path = require("node:path");
-
-const historyFile = path.join(__dirname, "..", "data", "stats-history.json");
-const levelsFile = path.join(__dirname, "..", "data", "level-data.json");
-
-function readJson(filePath, fallback) {
-  try {
-    if (!fs.existsSync(filePath)) return fallback;
-    return JSON.parse(fs.readFileSync(filePath, "utf8"));
-  } catch (error) {
-    console.error(`Could not read ${path.basename(filePath)}:`, error);
-    return fallback;
-  }
-}
-
-function writeHistory(data) {
-  fs.mkdirSync(path.dirname(historyFile), { recursive: true });
-  fs.writeFileSync(historyFile, JSON.stringify(data, null, 2));
-}
+const { readJson, writeJson } = require("../utils/jsonStore");
 
 function getUserXpHistory(guildId, userId) {
-  const history = readJson(historyFile, {});
+  const history = readJson("stats-history.json", {});
   return history[guildId]?.users?.[userId] || [];
 }
 
 function recordDailyXp(client) {
-  const levelData = readJson(levelsFile, { users: {} });
-  const history = readJson(historyFile, {});
+  const levelData = readJson("level-data.json", { users: {} });
+  const history = readJson("stats-history.json", {});
   const today = new Date().toISOString().slice(0, 10);
   let changed = false;
 
@@ -56,7 +37,7 @@ function recordDailyXp(client) {
     }
   }
 
-  if (changed) writeHistory(history);
+  if (changed) writeJson("stats-history.json", history);
 }
 
 function registerStatsHistoryTracking(client) {

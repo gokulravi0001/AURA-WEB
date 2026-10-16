@@ -23,6 +23,7 @@ const memoryCache = new Map();
 const TRACKED_FILES = [
   "announcements.json",
   "birthdays.json",
+  "command-settings.json",
   "counting-data.json",
   "events.json",
   "greeting-settings.json",
@@ -40,6 +41,7 @@ const TRACKED_FILES = [
   "social-data.json",
   "stats-history.json",
   "sticky-messages.json",
+  "suggestion-settings.json",
   "temp-voice-data.json",
   "thread-settings.json",
   "ticket-settings.json",

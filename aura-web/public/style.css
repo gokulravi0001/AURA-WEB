@@ -1,29 +1,30 @@
 :root {
-  --bg-primary: #08030c;
-  --bg-secondary: #100618;
-  --bg-card: rgba(22, 8, 32, 0.75);
-  --bg-card-hover: rgba(35, 12, 50, 0.9);
-  --bg-input: rgba(14, 5, 20, 0.85);
+  --bg-primary: #000000;
+  --bg-secondary: #050505;
+  --bg-card: rgba(8, 8, 8, 0.94);
+  --bg-card-hover: rgba(18, 0, 10, 0.95);
+  --bg-input: #000000;
 
-  --flame-red: #ff2a55;
-  --flame-crimson: #e60039;
-  --flame-purple: #9d00ff;
-  --flame-violet: #6b00b3;
-  --flame-pink: #ff3385;
+  --flame-red: #ff0000;
+  --flame-crimson: #cc0000;
+  --flame-purple: #9900ff;
+  --flame-violet: #7700cc;
+  --flame-pink: #ff0055;
   --flame-gold: #ffaa00;
 
-  --gradient-aura: linear-gradient(135deg, #ff2a55 0%, #b300ff 50%, #7000ff 100%);
-  --gradient-aura-horizontal: linear-gradient(90deg, #ff2a55, #bf00ff, #ff2a70);
-  --gradient-glass: linear-gradient(135deg, rgba(255, 42, 85, 0.12) 0%, rgba(157, 0, 255, 0.08) 100%);
-  --glow-aura: 0 0 25px rgba(255, 42, 85, 0.4), 0 0 50px rgba(157, 0, 255, 0.25);
-  --glow-aura-intense: 0 0 35px rgba(255, 42, 85, 0.65), 0 0 70px rgba(157, 0, 255, 0.45);
-  --glow-circle: 0 0 40px rgba(179, 0, 255, 0.5), 0 0 80px rgba(255, 42, 85, 0.3);
+  --gradient-aura: linear-gradient(135deg, #ff0000 0%, #9900ff 100%);
+  --gradient-aura-horizontal: linear-gradient(90deg, #ff0000, #9900ff);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 0, 0, 0.14) 0%, rgba(153, 0, 255, 0.1) 100%);
+  --glow-aura: 0 0 25px rgba(255, 0, 0, 0.55), 0 0 50px rgba(153, 0, 255, 0.35);
+  --glow-aura-intense: 0 0 35px rgba(255, 0, 0, 0.8), 0 0 70px rgba(153, 0, 255, 0.6);
+  --glow-circle: 0 0 40px rgba(153, 0, 255, 0.55), 0 0 80px rgba(255, 0, 0, 0.35);
 
-  --text-main: #fbf5ff;
-  --text-muted: #bda4c7;
-  --text-dim: #7f6889;
-  --border-aura: 1px solid rgba(255, 42, 85, 0.22);
-  --border-aura-hover: 1px solid rgba(255, 42, 85, 0.65);
+  --text-main: #ffffff;
+  --text-muted: #d4b8e0;
+  --text-dim: #8b7496;
+  --border-aura: 1px solid rgba(255, 0, 0, 0.32);
+  --border-aura-hover: 1px solid #ff0000;
+  --border-purple: 1px solid rgba(153, 0, 255, 0.45);
   --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
@@ -61,7 +62,7 @@ body {
   height: 550px;
   top: -160px;
   left: -160px;
-  background: rgba(255, 42, 85, 0.3);
+  background: rgba(255, 0, 0, 0.35);
 }
 
 .ambient-glow.top-right {
@@ -69,7 +70,7 @@ body {
   height: 600px;
   top: -120px;
   right: -150px;
-  background: rgba(157, 0, 255, 0.28);
+  background: rgba(153, 0, 255, 0.35);
 }
 
 .ambient-glow.center-glow {
@@ -78,7 +79,7 @@ body {
   top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(255, 42, 85, 0.15), rgba(157, 0, 255, 0.12));
+  background: radial-gradient(circle, rgba(255, 0, 0, 0.16), rgba(153, 0, 255, 0.15));
 }
 
 /* Floating Embers Canvas */
@@ -98,9 +99,9 @@ body {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
-  background: #190623;
-  border: 1px solid #ff2a55;
-  box-shadow: var(--glow-aura-intense);
+  background: #000000;
+  border: 1px solid #ff0000;
+  box-shadow: 0 0 25px rgba(255, 0, 0, 0.6);
   color: #fff;
   padding: 1rem 1.6rem;
   border-radius: 14px;
@@ -117,15 +118,15 @@ body {
 }
 
 /* ==========================================================================
-   NAVIGATION BAR (Nekotina Style)
+   NAVIGATION BAR
    ========================================================================== */
 .aura-navbar {
   position: sticky;
   top: 0;
   z-index: 100;
   backdrop-filter: blur(24px);
-  background: rgba(8, 3, 12, 0.78);
-  border-bottom: 1px solid rgba(255, 42, 85, 0.2);
+  background: rgba(0, 0, 0, 0.92);
+  border-bottom: 1px solid rgba(255, 0, 0, 0.25);
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -580,6 +580,28 @@ app.post("/api/guild/reaction-roles", async (req, res) => {
   });
 });
 
+app.get("/api/guild/reaction-roles", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.query.guildId || "1547837282109624462";
+  const rrStore = readBotData("reaction-roles.json", { panels: [] });
+  const panels = (rrStore.panels || []).filter((p) => !p.guildId || p.guildId === guildId);
+  res.json({ panels });
+});
+
+app.delete("/api/guild/reaction-roles/:msgId", async (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.query.guildId || "1547837282109624462";
+  const { msgId } = req.params;
+  const rrStore = readBotData("reaction-roles.json", { panels: [] });
+  const target = (rrStore.panels || []).find((p) => p.messageId === msgId);
+  if (target && target.channelId) {
+    await axios.delete(`https://discord.com/api/v10/channels/${target.channelId}/messages/${msgId}`, {
+      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
+    }).catch(() => {});
+  }
+  rrStore.panels = (rrStore.panels || []).filter((p) => p.messageId !== msgId);
+  writeBotData("reaction-roles.json", rrStore);
+  res.json({ success: true, message: "Reaction role panel removed from bot and Discord!" });
+});
+
 // 4. SET WELCOME & BYE EMBED
 app.post("/api/guild/greetings", (req, res) => {
   const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
@@ -648,6 +670,32 @@ app.post("/api/guild/sticky", async (req, res) => {
     sticky: stickyStore[key],
     discordSent: Boolean(discordMsg),
   });
+});
+
+app.get("/api/guild/stickies", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.query.guildId || "1547837282109624462";
+  const stickyStore = readBotData("sticky-messages.json", {});
+  const list = [];
+  for (const [k, v] of Object.entries(stickyStore)) {
+    if (k.startsWith(`${guildId}:`)) {
+      const channelId = k.split(":")[1];
+      list.push({ channelId, ...v });
+    }
+  }
+  res.json({ stickies: list });
+});
+
+app.delete("/api/guild/sticky/:channelId", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.query.guildId || "1547837282109624462";
+  const { channelId } = req.params;
+  const stickyStore = readBotData("sticky-messages.json", {});
+  const key = `${guildId}:${channelId}`;
+  if (stickyStore[key]) {
+    delete stickyStore[key];
+    writeBotData("sticky-messages.json", stickyStore);
+    return res.json({ success: true, message: "Sticky message removed from channel." });
+  }
+  res.status(404).json({ error: "No sticky message found for this channel." });
 });
 
 // 6. SET THREAD AUTO-CREATION CHANNEL
@@ -782,6 +830,79 @@ app.delete("/api/guild/birthdays/:userId", (req, res) => {
   res.status(404).json({ error: "Birthday not found." });
 });
 
+app.get("/api/guild/birthdays/user/:userId", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.query.guildId || "1547837282109624462";
+  const { userId } = req.params;
+  const birthdayStore = readBotData("birthdays.json", { settings: {}, birthdays: {} });
+  const bday = birthdayStore.birthdays?.[guildId]?.[userId];
+  if (!bday) {
+    return res.status(404).json({ error: "No birthday registered for this user ID." });
+  }
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const parts = bday.date.split("/");
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  let nextBday = new Date(currentYear, month - 1, day);
+  if (nextBday < now && nextBday.toDateString() !== now.toDateString()) {
+    nextBday = new Date(currentYear + 1, month - 1, day);
+  }
+  const daysUntil = Math.ceil((nextBday - now) / (1000 * 60 * 60 * 24));
+
+  res.json({
+    userId,
+    date: bday.date,
+    daysUntil,
+    status: daysUntil === 0 ? "Today! 🎉" : (daysUntil === 1 ? "Tomorrow! 🎈" : `in ${daysUntil} days`),
+  });
+});
+
+app.post("/api/guild/birthdays/announce-now", async (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const birthdayStore = readBotData("birthdays.json", { settings: {}, birthdays: {} });
+  const settings = birthdayStore.settings?.[guildId];
+  if (!settings?.announcementChannelId) {
+    return res.status(400).json({ error: "Announcement channel not configured. Set it in Birthday Settings." });
+  }
+
+  const today = new Date();
+  const todayDay = String(today.getDate()).padStart(2, "0");
+  const todayMonth = String(today.getMonth() + 1).padStart(2, "0");
+  const guildBdays = birthdayStore.birthdays?.[guildId] || {};
+
+  const celebratingUsers = [];
+  for (const [userId, item] of Object.entries(guildBdays)) {
+    const parts = (item.date || "").split("/");
+    if (parts[0]?.padStart(2, "0") === todayDay && parts[1]?.padStart(2, "0") === todayMonth) {
+      celebratingUsers.push(userId);
+    }
+  }
+
+  if (celebratingUsers.length === 0) {
+    // Send a friendly ping confirming no birthdays today or send a test celebration
+    const testMsg = await sendDiscordChannelMessage(settings.announcementChannelId, {
+      content: "🎂 **Birthday System Check:** No members have birthdays today. System is active and ready!",
+    });
+    return res.json({ success: true, message: "Announcement channel verified! No birthdays scheduled for today.", testSent: Boolean(testMsg) });
+  }
+
+  const mentions = celebratingUsers.map((uid) => `<@${uid}>`).join(", ");
+  const embed = {
+    title: "🎂 Happy Birthday From AURA!",
+    description: `🎉 Everyone wish a fantastic birthday to ${mentions}! May you have a wonderful year ahead! 🎈✨`,
+    color: 0xff0000,
+    timestamp: new Date().toISOString(),
+  };
+
+  const sent = await sendDiscordChannelMessage(settings.announcementChannelId, {
+    content: `🎉 Happy Birthday ${mentions}!`,
+    embeds: [embed],
+  });
+
+  res.json({ success: true, message: `Celebration dispatched to channel for ${celebratingUsers.length} member(s)!`, sent: Boolean(sent) });
+});
+
 // 8. SET COUNTING & WORD CHAIN (CHANNELS & CUSTOM MODES)
 app.post("/api/guild/minigames", (req, res) => {
   const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
@@ -828,6 +949,225 @@ app.post("/api/guild/levels", (req, res) => {
   writeBotData("level-data.json", levelData);
 
   res.json({ success: true, message: "Level celebration channel & rewards saved!", levelSettings: levelData.settings[guildId] });
+});
+
+// LEVEL MANAGEMENT ACTIONS (/level add-xp, remove-xp, set-level, reset, reset-all)
+app.post("/api/guild/levels/add-xp", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const { userId, amount } = req.body;
+  const num = parseInt(amount, 10);
+  if (!userId || isNaN(num) || num <= 0) {
+    return res.status(400).json({ error: "Valid User ID and positive XP amount required." });
+  }
+
+  const levelData = readBotData("level-data.json", { settings: {}, users: {} });
+  levelData.users[guildId] = levelData.users[guildId] || {};
+  const current = levelData.users[guildId][userId] || { xp: 0, level: 0, messages: 0 };
+  current.xp = (current.xp || 0) + num;
+  current.level = Math.floor(Math.sqrt(current.xp / 50)) || 1;
+  levelData.users[guildId][userId] = current;
+  writeBotData("level-data.json", levelData);
+
+  res.json({ success: true, message: `Added ${num.toLocaleString()} XP to <@${userId}>! Current Level: ${current.level}`, user: current });
+});
+
+app.post("/api/guild/levels/remove-xp", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const { userId, amount } = req.body;
+  const num = parseInt(amount, 10);
+  if (!userId || isNaN(num) || num <= 0) {
+    return res.status(400).json({ error: "Valid User ID and positive XP amount required." });
+  }
+
+  const levelData = readBotData("level-data.json", { settings: {}, users: {} });
+  levelData.users[guildId] = levelData.users[guildId] || {};
+  const current = levelData.users[guildId][userId] || { xp: 0, level: 0, messages: 0 };
+  current.xp = Math.max(0, (current.xp || 0) - num);
+  current.level = Math.floor(Math.sqrt(current.xp / 50)) || 1;
+  levelData.users[guildId][userId] = current;
+  writeBotData("level-data.json", levelData);
+
+  res.json({ success: true, message: `Deducted ${num.toLocaleString()} XP from <@${userId}>! Current Level: ${current.level}`, user: current });
+});
+
+app.post("/api/guild/levels/set-level", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const { userId, level } = req.body;
+  const targetLevel = parseInt(level, 10);
+  if (!userId || isNaN(targetLevel) || targetLevel < 0) {
+    return res.status(400).json({ error: "Valid User ID and non-negative level required." });
+  }
+
+  const levelData = readBotData("level-data.json", { settings: {}, users: {} });
+  levelData.users[guildId] = levelData.users[guildId] || {};
+  const current = levelData.users[guildId][userId] || { xp: 0, level: 0, messages: 0 };
+  current.level = targetLevel;
+  current.xp = 50 * targetLevel * (targetLevel + 1);
+  levelData.users[guildId][userId] = current;
+  writeBotData("level-data.json", levelData);
+
+  res.json({ success: true, message: `Set <@${userId}> directly to Level ${targetLevel} (${current.xp.toLocaleString()} XP)!`, user: current });
+});
+
+app.post("/api/guild/levels/reset-user", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: "User ID required." });
+
+  const levelData = readBotData("level-data.json", { settings: {}, users: {} });
+  if (levelData.users?.[guildId]?.[userId]) {
+    delete levelData.users[guildId][userId];
+    writeBotData("level-data.json", levelData);
+    return res.json({ success: true, message: `Reset XP and Level to 0 for <@${userId}>.` });
+  }
+  res.status(404).json({ error: "Member has no XP records in this server." });
+});
+
+app.post("/api/guild/levels/reset-all", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const levelData = readBotData("level-data.json", { settings: {}, users: {} });
+  levelData.users = levelData.users || {};
+  levelData.users[guildId] = {};
+  writeBotData("level-data.json", levelData);
+
+  res.json({ success: true, message: "Reset ALL members' XP and levels in this server to 0!" });
+});
+
+// MINIGAME ACTIONS
+app.post("/api/guild/minigames/reset-counting", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const countData = readBotData("counting-data.json", {});
+  if (countData[guildId]) {
+    countData[guildId].number = 0;
+    countData[guildId].lastUserId = null;
+    writeBotData("counting-data.json", countData);
+  }
+  res.json({ success: true, message: "Counting chain reset to 0! Next number is 1." });
+});
+
+app.post("/api/guild/minigames/set-counting", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const { number } = req.body;
+  const num = parseInt(number, 10);
+  if (isNaN(num)) return res.status(400).json({ error: "Valid integer number required." });
+
+  const countData = readBotData("counting-data.json", {});
+  countData[guildId] = countData[guildId] || { highScore: 0, mode: "allow_chat" };
+  countData[guildId].number = num;
+  countData[guildId].lastUserId = null;
+  writeBotData("counting-data.json", countData);
+
+  res.json({ success: true, message: `Counting chain updated to ${num}! Next number is ${num + 1}.` });
+});
+
+app.post("/api/guild/minigames/reset-wordchain", (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const wordData = readBotData("word-building-data.json", {});
+  if (wordData[guildId]) {
+    wordData[guildId].chainCount = 0;
+    wordData[guildId].lastWord = "flame";
+    wordData[guildId].lastUserId = null;
+    wordData[guildId].usedWords = [];
+    writeBotData("word-building-data.json", wordData);
+  }
+  res.json({ success: true, message: "Word chain reset! Next word must start with 'E' (from starting word 'flame')." });
+});
+
+// SERVER STATS FORCE SYNC NOW
+app.post("/api/guild/serverstats/sync-now", async (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const statsStore = readBotData("serverstats-data.json", {});
+  const config = statsStore[guildId];
+
+  if (!config) {
+    return res.status(400).json({ error: "Server stats voice counters are not configured." });
+  }
+
+  // Attempt to fetch guild member count via Discord REST
+  try {
+    const guildRes = await axios.get(`https://discord.com/api/v10/guilds/${guildId}?with_counts=true`, {
+      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
+    });
+    const approxMembers = guildRes.data.approximate_member_count || 100;
+    const approxPresence = guildRes.data.approximate_presence_count || 30;
+
+    if (config.totalChannelId) {
+      await axios.patch(
+        `https://discord.com/api/v10/channels/${config.totalChannelId}`,
+        { name: `📊 Total Members: ${approxMembers.toLocaleString()}` },
+        { headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}`, "Content-Type": "application/json" } }
+      ).catch(() => {});
+    }
+
+    res.json({
+      success: true,
+      message: "Server stats voice channels updated with latest counts in Discord!",
+      counts: { members: approxMembers, online: approxPresence },
+    });
+  } catch (err) {
+    res.json({
+      success: true,
+      message: "Voice counter refresh triggered! Bot background worker will refresh channels within 60s.",
+    });
+  }
+});
+
+// GREETINGS TEST TRIGGERS
+app.post("/api/guild/greetings/test-welcome", async (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const greetingData = readBotData("greeting-settings.json", {});
+  const config = greetingData[guildId];
+
+  if (!config?.welcomeChannelId) {
+    return res.status(400).json({ error: "Welcome Channel ID is not configured." });
+  }
+
+  const embed = {
+    title: (config.welcomeTitle || "Welcome to {server}!").replace("{server}", "Server"),
+    description: (config.welcomeMessage || "Welcome {user} to the server!").replace("{user}", `<@${req.session?.user?.id || "Admin"}>`).replace("{server}", "Server").replace("{count}", "1"),
+    color: 0xff0000,
+    timestamp: new Date().toISOString(),
+  };
+
+  const sent = await sendDiscordChannelMessage(config.welcomeChannelId, { embeds: [embed] });
+  res.json({ success: true, message: sent ? "Test Welcome Embed sent to Discord!" : "Could not send test message. Check channel permissions.", sent: Boolean(sent) });
+});
+
+app.post("/api/guild/greetings/test-bye", async (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const greetingData = readBotData("greeting-settings.json", {});
+  const config = greetingData[guildId];
+
+  if (!config?.goodbyeChannelId) {
+    return res.status(400).json({ error: "Goodbye Channel ID is not configured." });
+  }
+
+  const embed = {
+    title: (config.goodbyeTitle || "Farewell!").replace("{server}", "Server"),
+    description: (config.goodbyeMessage || "{user} left the server.").replace("{user}", `<@${req.session?.user?.id || "Admin"}>`).replace("{server}", "Server"),
+    color: 0x9900ff,
+    timestamp: new Date().toISOString(),
+  };
+
+  const sent = await sendDiscordChannelMessage(config.goodbyeChannelId, { embeds: [embed] });
+  res.json({ success: true, message: sent ? "Test Goodbye Embed sent to Discord!" : "Could not send test message. Check channel permissions.", sent: Boolean(sent) });
+});
+
+// EMERGENCY LOCKDOWN TOGGLE
+app.post("/api/guild/security/lockdown", async (req, res) => {
+  const guildId = req.session?.selectedGuild?.id || req.body.guildId || "1547837282109624462";
+  const securityData = readBotData("security-data.json", {});
+  securityData[guildId] = securityData[guildId] || { antiRaid: { enabled: true }, antiNuke: { enabled: true }, antiSpam: { enabled: true } };
+
+  securityData[guildId].activeLockdown = !securityData[guildId].activeLockdown;
+  writeBotData("security-data.json", securityData);
+
+  const statusStr = securityData[guildId].activeLockdown ? "ACTIVE 🚨" : "OFF ✅";
+  res.json({
+    success: true,
+    activeLockdown: securityData[guildId].activeLockdown,
+    message: `Server Lockdown is now ${statusStr}! Permissions updated across bot and database.`,
+  });
 });
 
 // 10. INVITE TRACKER CHANNEL

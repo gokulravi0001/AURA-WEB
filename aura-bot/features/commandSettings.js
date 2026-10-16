@@ -1,21 +1,11 @@
-const fs = require("node:fs");
-const path = require("node:path");
-
-const dataFile = path.join(__dirname, "..", "data", "command-settings.json");
+const { readJson, writeJson } = require("../utils/jsonStore");
 
 function readData() {
-  try {
-    if (!fs.existsSync(dataFile)) return {};
-    return JSON.parse(fs.readFileSync(dataFile, "utf8"));
-  } catch (error) {
-    console.error("Could not read command settings:", error);
-    throw new Error("Command settings could not be read.");
-  }
+  return readJson("command-settings.json", {});
 }
 
 function writeData(data) {
-  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
-  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+  writeJson("command-settings.json", data);
 }
 
 function getCommandSettings(guildId, commandNames) {

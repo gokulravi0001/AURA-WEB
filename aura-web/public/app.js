@@ -97,7 +97,7 @@ function showToast(message) {
 }
 
 // =============================================================================
-// ROUTING & VIEW NAVIGATION
+// MULTI-PAGE ROUTING & TRUE URL REDIRECTION ENGINE
 // =============================================================================
 const views = {
   home: document.getElementById("view-home"),
@@ -109,8 +109,52 @@ const views = {
   docs: document.getElementById("view-docs"),
 };
 
-const viewUrlMap = {
-  login: "/",
+const routeDefinitions = {
+  "/": { view: "login", title: "AURA • Red & Purple Flame Control Center" },
+  "/login": { view: "login", title: "AURA • Admin Login & Server Connect" },
+  "/home": { view: "home", title: "AURA • The Ultimate Flame Core" },
+  "/dashboard": { view: "dashboard", pane: "pane-announcement", title: "AURA • Control Hub" },
+  "/announcements": { view: "dashboard", pane: "pane-announcement", title: "AURA • Announcements Hub" },
+  "/rules": { view: "dashboard", pane: "pane-rules", title: "AURA • Server Rules Generator" },
+  "/reaction-roles": { view: "dashboard", pane: "pane-reaction-roles", title: "AURA • Reaction Roles Suite (25 Slots)" },
+  "/greetings": { view: "dashboard", pane: "pane-greetings", title: "AURA • Welcome & Farewell Embeds" },
+  "/stickies": { view: "dashboard", pane: "pane-sticky", title: "AURA • Persistent Sticky Messages" },
+  "/threads": { view: "dashboard", pane: "pane-threads", title: "AURA • Auto-Threading Channels" },
+  "/birthdays": { view: "dashboard", pane: "pane-birthday", title: "AURA • Server Birthdays & Celebrations" },
+  "/minigames": { view: "dashboard", pane: "pane-minigames", title: "AURA • Counting & Word Chain Minigames" },
+  "/serverstats": { view: "dashboard", pane: "pane-serverstats", title: "AURA • Server Stats Voice Counters" },
+  "/levels": { view: "dashboard", pane: "pane-levels", title: "AURA • XP Progression & Role Rewards" },
+  "/events": { view: "dashboard", pane: "pane-events", title: "AURA • Community Events Calendar" },
+  "/voice": { view: "dashboard", pane: "pane-voice", title: "AURA • Temp Voice Join-to-Create Hub" },
+  "/invites": { view: "dashboard", pane: "pane-invites", title: "AURA • Member & Vanity Invite Tracker" },
+  "/logs": { view: "dashboard", pane: "pane-logs", title: "AURA • Moderation Audit Logs" },
+  "/security": { view: "dashboard", pane: "pane-security", title: "AURA • Anti-Raid & Server Security" },
+  "/leaderboard": { view: "leaderboard", title: "AURA • Exact Username XP Leaderboard" },
+  "/profile": { view: "profile", title: "AURA • Member Profile & Stat View" },
+  "/commands": { view: "commands", title: "AURA • Slash Commands Catalog (All 30)" },
+  "/docs": { view: "docs", title: "AURA • Synchronization Guide & Wiki" },
+};
+
+const paneToUrlMap = {
+  "pane-announcement": "/announcements",
+  "pane-rules": "/rules",
+  "pane-reaction-roles": "/reaction-roles",
+  "pane-greetings": "/greetings",
+  "pane-sticky": "/stickies",
+  "pane-threads": "/threads",
+  "pane-birthday": "/birthdays",
+  "pane-minigames": "/minigames",
+  "pane-serverstats": "/serverstats",
+  "pane-levels": "/levels",
+  "pane-events": "/events",
+  "pane-voice": "/voice",
+  "pane-invites": "/invites",
+  "pane-logs": "/logs",
+  "pane-security": "/security",
+};
+
+const viewToDefaultUrl = {
+  login: "/login",
   home: "/home",
   dashboard: "/dashboard",
   leaderboard: "/leaderboard",
@@ -119,67 +163,89 @@ const viewUrlMap = {
   docs: "/docs",
 };
 
-const urlViewMap = {
-  "/": "login",
-  "/login": "login",
-  "/home": "home",
-  "/dashboard": "dashboard",
-  "/leaderboard": "leaderboard",
-  "/profile": "profile",
-  "/commands": "commands",
-  "/docs": "docs",
-};
-
-function navigateTo(viewName, e, updateUrl = true) {
+function navigateTo(target, e, updateHistory = true) {
   if (e && e.preventDefault) e.preventDefault();
-  if (!views[viewName]) viewName = "home";
 
+  let targetPath = target;
+  if (!targetPath.startsWith("/")) {
+    targetPath = viewToDefaultUrl[target] || `/${target}`;
+  }
+
+  const route = routeDefinitions[targetPath] || routeDefinitions["/home"];
+  const viewName = route.view;
+
+  // Toggle main views
   Object.keys(views).forEach((vKey) => {
     if (views[vKey]) {
       views[vKey].classList.toggle("active-view", vKey === viewName);
     }
   });
 
+  // Highlight active navbar link
   document.querySelectorAll(".nav-link").forEach((link) => {
     link.classList.toggle("active", link.dataset.view === viewName);
   });
 
-  if (updateUrl && viewUrlMap[viewName]) {
-    const targetUrl = viewUrlMap[viewName];
-    if (window.location.pathname !== targetUrl) {
-      window.history.pushState({ viewName }, "", targetUrl);
-    }
+  // If this route specifies a dashboard pane, activate that pane
+  if (route.pane) {
+    switchDashPane(route.pane, false);
+  }
+
+  // Update URL in browser address bar (True URL redirection)
+  if (updateHistory && window.location.pathname !== targetPath) {
+    window.history.pushState({ path: targetPath }, "", targetPath);
+  }
+
+  // Update document title
+  if (route.title) {
+    document.title = route.title;
   }
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 
+  // Load relevant data for the view
   if (viewName === "commands") loadCommands();
   if (viewName === "leaderboard") loadLeaderboard();
-  if (viewName === "dashboard") loadGuildConfig();
+  if (viewName === "dashboard") {
+    loadGuildConfig();
+    if (route.pane === "pane-birthday") loadBirthdays(1);
+    if (route.pane === "pane-sticky") loadActiveStickies();
+    if (route.pane === "pane-reaction-roles") loadActiveReactionPanels();
+  }
 }
 
 function navigateToDashboardTab(paneId) {
-  navigateTo("dashboard");
   const fullPaneId = paneId.startsWith("pane-") ? paneId : `pane-${paneId}`;
-  switchDashPane(fullPaneId);
+  const targetUrl = paneToUrlMap[fullPaneId] || "/dashboard";
+  navigateTo(targetUrl);
 }
 
-function switchDashPane(paneId) {
+function switchDashPane(paneId, updateUrl = true) {
   document.querySelectorAll(".dash-nav-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.pane === paneId);
   });
   document.querySelectorAll(".config-pane").forEach((pane) => {
     pane.classList.toggle("active-pane", pane.id === paneId);
   });
-  if (paneId === "pane-birthday") {
-    loadBirthdays(1);
+
+  const targetUrl = paneToUrlMap[paneId] || "/dashboard";
+  if (updateUrl && window.location.pathname !== targetUrl) {
+    window.history.pushState({ paneId, path: targetUrl }, "", targetUrl);
   }
+
+  const routeDef = routeDefinitions[targetUrl];
+  if (routeDef && routeDef.title) {
+    document.title = routeDef.title;
+  }
+
+  if (paneId === "pane-birthday") loadBirthdays(1);
+  if (paneId === "pane-sticky") loadActiveStickies();
+  if (paneId === "pane-reaction-roles") loadActiveReactionPanels();
 }
 
-window.addEventListener("popstate", () => {
+window.addEventListener("popstate", (event) => {
   const currentPath = window.location.pathname;
-  const targetView = urlViewMap[currentPath] || "home";
-  navigateTo(targetView, null, false);
+  navigateTo(currentPath, null, false);
 });
 
 // =============================================================================
@@ -1363,10 +1429,19 @@ async function loadGuildConfig() {
     if (data.counting) {
       if (document.getElementById("counting-channel-id")) document.getElementById("counting-channel-id").value = data.counting.channelId || "";
       if (document.getElementById("counting-mode")) document.getElementById("counting-mode").value = data.counting.mode || "allow_chat";
+      if (document.getElementById("counting-live-current")) document.getElementById("counting-live-current").innerText = data.counting.number ?? 0;
+      if (document.getElementById("counting-live-highscore")) document.getElementById("counting-live-highscore").innerText = data.counting.highScore ?? 0;
+      if (document.getElementById("counting-live-lastuser")) document.getElementById("counting-live-lastuser").innerText = data.counting.lastUserId ? `<@${data.counting.lastUserId}>` : "None";
     }
     if (data.wordChain) {
       if (document.getElementById("wordchain-channel-id")) document.getElementById("wordchain-channel-id").value = data.wordChain.channelId || "";
       if (document.getElementById("wordchain-starting-word")) document.getElementById("wordchain-starting-word").value = data.wordChain.lastWord || "flame";
+      if (document.getElementById("wordchain-live-current")) document.getElementById("wordchain-live-current").innerText = data.wordChain.lastWord || "flame";
+      if (document.getElementById("wordchain-live-streak")) document.getElementById("wordchain-live-streak").innerText = data.wordChain.chainCount ?? 0;
+      if (document.getElementById("wordchain-live-nextletter")) {
+        const lastW = data.wordChain.lastWord || "flame";
+        document.getElementById("wordchain-live-nextletter").innerText = lastW.slice(-1).toUpperCase();
+      }
     }
 
     // 9. Server Stats
@@ -1408,7 +1483,13 @@ async function loadGuildConfig() {
       if (document.getElementById("cfg-toggle-antiraid")) document.getElementById("cfg-toggle-antiraid").checked = data.security.antiRaid?.enabled !== false;
       if (document.getElementById("cfg-toggle-antinuke")) document.getElementById("cfg-toggle-antinuke").checked = data.security.antiNuke?.enabled !== false;
       if (document.getElementById("cfg-toggle-antispam")) document.getElementById("cfg-toggle-antispam").checked = data.security.antiSpam?.enabled !== false;
-      if (document.getElementById("cfg-toggle-lockdown")) document.getElementById("cfg-toggle-lockdown").checked = Boolean(data.security.activeLockdown);
+      const isLockdown = Boolean(data.security.activeLockdown);
+      if (document.getElementById("cfg-toggle-lockdown")) document.getElementById("cfg-toggle-lockdown").checked = isLockdown;
+      const badge = document.getElementById("lockdown-status-badge");
+      if (badge) {
+        badge.innerText = isLockdown ? "ACTIVE 🚨" : "STANDBY 🛡️";
+        badge.style.background = isLockdown ? "rgba(255,0,0,0.8)" : "rgba(255,0,0,0.3)";
+      }
     }
   } catch (err) {
     console.error("Guild config load failed:", err);
@@ -1618,6 +1699,486 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
+// =============================================================================
+// COMPLETE SERVER-ALTERING ACTION HANDLERS (FULL COMMAND COVERAGE)
+// =============================================================================
+
+// 1. BIRTHDAYS
+async function lookupUserBirthday() {
+  const userId = document.getElementById("bday-lookup-id")?.value.trim();
+  const resBox = document.getElementById("bday-lookup-result");
+  if (!userId) {
+    showToast("⚠️ Enter a Discord User ID to inspect birthday.");
+    return;
+  }
+  try {
+    const res = await fetch(`/api/guild/birthdays/user/${encodeURIComponent(userId)}`);
+    const data = await res.json();
+    if (res.ok && data.date) {
+      resBox.style.display = "block";
+      resBox.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem;">
+          <div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">Member: <span style="color:#fff; font-family:var(--font-mono); font-weight:700;">&lt;@${escapeHtml(data.userId)}&gt;</span></div>
+            <div style="font-size:1.25rem; font-weight:900; color:#ff0000; margin:0.2rem 0;">🎂 ${escapeHtml(data.date)}</div>
+            <div style="font-size:0.85rem; color:#00ffa6; font-weight:700;">${escapeHtml(data.status)}</div>
+          </div>
+          <button class="btn-aura-outline" style="color:#ff4d88; border-color:#ff4d88; padding:0.4rem 0.9rem; font-size:0.8rem;" onclick="deleteBirthday('${data.userId}')">
+            Remove Birthday ✕
+          </button>
+        </div>
+      `;
+      showToast(`🎂 Birthday for <@${userId}>: ${data.date} (${data.status})`);
+    } else {
+      resBox.style.display = "block";
+      resBox.innerHTML = `<span style="color:#ffaa00;">⚠️ No birthday saved in server database for User ID ${escapeHtml(userId)}.</span>`;
+      showToast("⚠️ No birthday found for this User ID.");
+    }
+  } catch (err) {
+    console.error("Lookup bday error:", err);
+    showToast("❌ Error looking up member birthday.");
+  }
+}
+
+async function submitQuickBirthday() {
+  const userId = document.getElementById("bday-set-userid")?.value.trim();
+  const date = document.getElementById("bday-set-date")?.value.trim();
+  if (!userId || !date) {
+    showToast("⚠️ Please provide both Member User ID and Date (DD/MM).");
+    return;
+  }
+  try {
+    const res = await fetch("/api/guild/birthdays/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, date }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message || `🎂 Saved birthday for <@${userId}>!`);
+      document.getElementById("bday-set-userid").value = "";
+      document.getElementById("bday-set-date").value = "";
+      loadBirthdays(1);
+    } else {
+      showToast(`❌ Error: ${data.error || "Failed to save birthday."}`);
+    }
+  } catch (err) {
+    console.error("Quick bday error:", err);
+    showToast("❌ Network error saving birthday.");
+  }
+}
+
+async function announceBirthdaysNow() {
+  showToast("🎉 Checking and broadcasting today's celebrations to Discord...");
+  try {
+    const res = await fetch("/api/guild/birthdays/announce-now", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`🎉 ${data.message}`);
+    } else {
+      showToast(`❌ ${data.error || "Failed to broadcast announcement."}`);
+    }
+  } catch (err) {
+    console.error("Announce bday error:", err);
+    showToast("❌ Network error broadcasting birthday.");
+  }
+}
+
+// 2. LEVELING
+async function lookupMemberLevel() {
+  const userId = document.getElementById("lvl-lookup-id")?.value.trim();
+  const resBox = document.getElementById("lvl-lookup-result");
+  if (!userId) {
+    showToast("⚠️ Enter a Discord User ID to inspect level.");
+    return;
+  }
+  try {
+    const res = await fetch(`/api/profile/${encodeURIComponent(userId)}`);
+    const data = await res.json();
+    if (res.ok) {
+      resBox.style.display = "block";
+      resBox.innerHTML = `
+        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+          <img src="${data.avatar || 'aura-logo.png'}" style="width:54px; height:54px; border-radius:50%; border:2px solid #ff0000;" onerror="this.src='aura-logo.png'">
+          <div style="flex:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="color:#fff; font-size:1.1rem;">${escapeHtml(data.username)}</strong>
+              <span style="color:#ff0000; font-weight:800; font-size:1.1rem;">Level ${data.level || 1}</span>
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">
+              Total XP: <span style="color:#00ffa6; font-weight:700;">${(data.xp || 0).toLocaleString()}</span> &bull; 
+              Messages: <span style="color:#fff;">${(data.messages || 0).toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      showToast(`Level ${data.level || 1} • ${(data.xp || 0).toLocaleString()} XP for ${data.username}`);
+    } else {
+      resBox.style.display = "block";
+      resBox.innerHTML = `<span style="color:#ffaa00;">⚠️ No level data found for User ID ${escapeHtml(userId)}.</span>`;
+    }
+  } catch (err) {
+    console.error("Lookup level error:", err);
+    showToast("❌ Error inspecting member level.");
+  }
+}
+
+async function addMemberXpAction() {
+  const userId = document.getElementById("xp-add-userid")?.value.trim();
+  const amount = document.getElementById("xp-add-amount")?.value.trim();
+  if (!userId || !amount) {
+    showToast("⚠️ Enter User ID and XP amount to add.");
+    return;
+  }
+  try {
+    const res = await fetch("/api/guild/levels/add-xp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, amount }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      document.getElementById("xp-add-userid").value = "";
+      document.getElementById("xp-add-amount").value = "";
+      loadLeaderboard(1);
+    } else {
+      showToast(`❌ Error: ${data.error || "Failed to add XP."}`);
+    }
+  } catch (err) {
+    showToast("❌ Network error adding XP.");
+  }
+}
+
+async function removeMemberXpAction() {
+  const userId = document.getElementById("xp-remove-userid")?.value.trim();
+  const amount = document.getElementById("xp-remove-amount")?.value.trim();
+  if (!userId || !amount) {
+    showToast("⚠️ Enter User ID and XP amount to deduct.");
+    return;
+  }
+  try {
+    const res = await fetch("/api/guild/levels/remove-xp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, amount }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      document.getElementById("xp-remove-userid").value = "";
+      document.getElementById("xp-remove-amount").value = "";
+      loadLeaderboard(1);
+    } else {
+      showToast(`❌ Error: ${data.error || "Failed to deduct XP."}`);
+    }
+  } catch (err) {
+    showToast("❌ Network error deducting XP.");
+  }
+}
+
+async function setMemberLevelAction() {
+  const userId = document.getElementById("lvl-set-userid")?.value.trim();
+  const level = document.getElementById("lvl-set-number")?.value.trim();
+  if (!userId || !level) {
+    showToast("⚠️ Enter User ID and Target Level.");
+    return;
+  }
+  try {
+    const res = await fetch("/api/guild/levels/set-level", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, level }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      document.getElementById("lvl-set-userid").value = "";
+      document.getElementById("lvl-set-number").value = "";
+      loadLeaderboard(1);
+    } else {
+      showToast(`❌ Error: ${data.error || "Failed to set level."}`);
+    }
+  } catch (err) {
+    showToast("❌ Network error setting level.");
+  }
+}
+
+async function resetMemberLevelAction() {
+  const userId = document.getElementById("lvl-reset-userid")?.value.trim();
+  if (!userId) {
+    showToast("⚠️ Enter User ID to reset.");
+    return;
+  }
+  if (!confirm(`Are you sure you want to reset Level and XP to 0 for User ID ${userId}?`)) return;
+  try {
+    const res = await fetch("/api/guild/levels/reset-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      document.getElementById("lvl-reset-userid").value = "";
+      loadLeaderboard(1);
+    } else {
+      showToast(`❌ Error: ${data.error || "Failed to reset member."}`);
+    }
+  } catch (err) {
+    showToast("❌ Network error resetting member.");
+  }
+}
+
+async function resetAllServerLevelsAction() {
+  if (!confirm("🚨 WARNING: Are you ABSOLUTELY sure you want to reset all server members' levels and XP to 0? This cannot be undone!")) return;
+  try {
+    const res = await fetch("/api/guild/levels/reset-all", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      loadLeaderboard(1);
+    }
+  } catch (err) {
+    showToast("❌ Network error resetting server levels.");
+  }
+}
+
+// 3. MINIGAMES & SERVER STATS
+async function resetCountingGame() {
+  if (!confirm("Reset counting chain back to 0? Next number in server will be 1.")) return;
+  try {
+    const res = await fetch("/api/guild/minigames/reset-counting", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      const cur = document.getElementById("counting-live-current");
+      if (cur) cur.innerText = "0";
+    }
+  } catch (err) {
+    showToast("❌ Failed to reset counting.");
+  }
+}
+
+async function setCountingNumberAction() {
+  const number = document.getElementById("counting-set-input")?.value.trim();
+  if (!number) {
+    showToast("⚠️ Enter count number.");
+    return;
+  }
+  try {
+    const res = await fetch("/api/guild/minigames/set-counting", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ number }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      const cur = document.getElementById("counting-live-current");
+      if (cur) cur.innerText = number;
+    }
+  } catch (err) {
+    showToast("❌ Failed to update count.");
+  }
+}
+
+async function resetWordChainGame() {
+  if (!confirm("Reset Word Chain streak? Next word will start with 'E' from starting seed 'flame'.")) return;
+  try {
+    const res = await fetch("/api/guild/minigames/reset-wordchain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      const cur = document.getElementById("wordchain-live-current");
+      if (cur) cur.innerText = "flame";
+      const streak = document.getElementById("wordchain-live-streak");
+      if (streak) streak.innerText = "0";
+      const nextL = document.getElementById("wordchain-live-nextletter");
+      if (nextL) nextL.innerText = "E";
+    }
+  } catch (err) {
+    showToast("❌ Failed to reset word chain.");
+  }
+}
+
+async function forceSyncServerStatsNow() {
+  showToast("⚡ Dispatching voice channel name updates to Discord REST API...");
+  try {
+    const res = await fetch("/api/guild/serverstats/sync-now", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`✅ ${data.message}`);
+      if (data.counts) {
+        if (document.getElementById("stats-live-total")) document.getElementById("stats-live-total").innerText = data.counts.members.toLocaleString();
+      }
+    } else {
+      showToast(`❌ Error: ${data.error || "Failed to update voice channels."}`);
+    }
+  } catch (err) {
+    showToast("❌ Network error syncing voice channels.");
+  }
+}
+
+// 4. GREETINGS TEST TRIGGERS
+async function sendTestWelcomeAction() {
+  showToast("🚀 Sending test welcome embed to Discord...");
+  try {
+    const res = await fetch("/api/guild/greetings/test-welcome", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    showToast(data.message || (data.success ? "✅ Test welcome sent!" : "❌ Failed to send."));
+  } catch (err) {
+    showToast("❌ Error sending test welcome.");
+  }
+}
+
+async function sendTestGoodbyeAction() {
+  showToast("🚀 Sending test goodbye embed to Discord...");
+  try {
+    const res = await fetch("/api/guild/greetings/test-bye", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    showToast(data.message || (data.success ? "✅ Test goodbye sent!" : "❌ Failed to send."));
+  } catch (err) {
+    showToast("❌ Error sending test goodbye.");
+  }
+}
+
+// 5. SECURITY LOCKDOWN & STICKIES / REACTION PANELS
+async function toggleEmergencyLockdownAction() {
+  try {
+    const res = await fetch("/api/guild/security/lockdown", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      const badge = document.getElementById("lockdown-status-badge");
+      if (badge) {
+        badge.innerText = data.activeLockdown ? "ACTIVE 🚨" : "STANDBY 🛡️";
+        badge.style.background = data.activeLockdown ? "rgba(255,0,0,0.8)" : "rgba(255,0,0,0.3)";
+      }
+      const chk = document.getElementById("cfg-toggle-lockdown");
+      if (chk) chk.checked = Boolean(data.activeLockdown);
+    }
+  } catch (err) {
+    showToast("❌ Error toggling server lockdown.");
+  }
+}
+
+async function loadActiveStickies() {
+  const container = document.getElementById("sticky-active-container");
+  if (!container) return;
+  try {
+    const res = await fetch("/api/guild/stickies");
+    const data = await res.json();
+    const stickies = data.stickies || [];
+    if (stickies.length === 0) {
+      container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem;">No active sticky messages found in this server.</p>`;
+      return;
+    }
+    container.innerHTML = stickies
+      .map(
+        (s) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#000; padding:0.8rem 1rem; border-radius:10px; border:1px solid rgba(255,0,0,0.3); flex-wrap:wrap; gap:0.6rem;">
+        <div>
+          <span style="color:#ff0000; font-family:var(--font-mono); font-size:0.85rem; font-weight:700;">Channel: ${escapeHtml(s.channelId)}</span>
+          <p style="color:var(--text-muted); font-size:0.82rem; margin-top:0.2rem;">${escapeHtml(s.text.slice(0, 80))}${s.text.length > 80 ? "..." : ""}</p>
+        </div>
+        <button class="btn-aura-outline" style="color:#ff4d88; border-color:#ff4d88; padding:0.35rem 0.8rem; font-size:0.75rem;" onclick="deleteStickyAction('${s.channelId}')">
+          Delete Sticky ✕
+        </button>
+      </div>
+    `
+      )
+      .join("");
+  } catch (err) {
+    console.error("Load stickies error:", err);
+  }
+}
+
+async function deleteStickyAction(channelId) {
+  if (!confirm(`Remove sticky message for channel ${channelId}?`)) return;
+  try {
+    const res = await fetch(`/api/guild/sticky/${encodeURIComponent(channelId)}`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      loadActiveStickies();
+    }
+  } catch (err) {
+    showToast("❌ Error removing sticky message.");
+  }
+}
+
+async function loadActiveReactionPanels() {
+  const container = document.getElementById("rr-active-panels-container");
+  if (!container) return;
+  try {
+    const res = await fetch("/api/guild/reaction-roles");
+    const data = await res.json();
+    const panels = data.panels || [];
+    if (panels.length === 0) {
+      container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem;">No active reaction role panels found.</p>`;
+      return;
+    }
+    container.innerHTML = panels
+      .map(
+        (p) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#000; padding:0.8rem 1rem; border-radius:10px; border:1px solid rgba(153,0,255,0.35); flex-wrap:wrap; gap:0.6rem;">
+        <div>
+          <strong style="color:#fff; font-size:0.9rem;">${escapeHtml(p.title || "Reaction Roles")}</strong>
+          <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono); margin-top:0.2rem;">
+            Channel: ${escapeHtml(p.channelId)} &bull; Msg ID: ${escapeHtml(p.messageId)} &bull; Roles: ${(p.roles || []).length}
+          </div>
+        </div>
+        <button class="btn-aura-outline" style="color:#ff4d88; border-color:#ff4d88; padding:0.35rem 0.8rem; font-size:0.75rem;" onclick="deleteReactionPanelAction('${p.messageId}')">
+          Delete from Discord ✕
+        </button>
+      </div>
+    `
+      )
+      .join("");
+  } catch (err) {
+    console.error("Load panels error:", err);
+  }
+}
+
+async function deleteReactionPanelAction(msgId) {
+  if (!confirm("Delete this reaction role panel from Discord channel and database?")) return;
+  try {
+    const res = await fetch(`/api/guild/reaction-roles/${encodeURIComponent(msgId)}`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      loadActiveReactionPanels();
+    }
+  } catch (err) {
+    showToast("❌ Error deleting reaction panel.");
+  }
+}
+
 // Initial Route Resolution on Page Load
 function initPage() {
   const params = new URLSearchParams(window.location.search);
@@ -1628,8 +2189,8 @@ function initPage() {
   }
 
   const currentPath = window.location.pathname;
-  const initialView = urlViewMap[currentPath] || (window.location.hash ? window.location.hash.replace("#", "") : "login");
-  navigateTo(initialView, null, false);
+  const initialTarget = routeDefinitions[currentPath] ? currentPath : (window.location.hash ? window.location.hash.replace("#", "") : "/login");
+  navigateTo(initialTarget, null, false);
 
   renderRuleFields();
   renderReactionRoleRows();

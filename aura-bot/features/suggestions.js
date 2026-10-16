@@ -1,37 +1,26 @@
-const fs = require("node:fs");
-const path = require("node:path");
-
-const dataFile = path.join(__dirname, "..", "data", "suggestion-settings.json");
+const { readJson, writeJson } = require("../utils/jsonStore");
 
 function readData() {
-  try {
-    if (!fs.existsSync(dataFile)) return { configs: {}, suggestions: {} };
-    const raw = JSON.parse(fs.readFileSync(dataFile, "utf8"));
-    // Handle backwards compatibility if file had { [guildId]: forumId }
-    if (raw && typeof raw === "object" && !raw.configs) {
-      const configs = {};
-      for (const [k, v] of Object.entries(raw)) {
-        if (typeof v === "string") {
-          configs[k] = { channelId: v, isForum: true, autoThread: false };
-        } else {
-          configs[k] = v;
-        }
+  const raw = readJson("suggestion-settings.json", { configs: {}, suggestions: {} });
+  if (raw && typeof raw === "object" && !raw.configs) {
+    const configs = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (typeof v === "string") {
+        configs[k] = { channelId: v, isForum: true, autoThread: false };
+      } else {
+        configs[k] = v;
       }
-      return { configs, suggestions: {} };
     }
-    return {
-      configs: raw.configs || {},
-      suggestions: raw.suggestions || {},
-    };
-  } catch (error) {
-    console.error("Could not read suggestion settings:", error);
-    return { configs: {}, suggestions: {} };
+    return { configs, suggestions: {} };
   }
+  return {
+    configs: raw.configs || {},
+    suggestions: raw.suggestions || {},
+  };
 }
 
 function writeData(data) {
-  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
-  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+  writeJson("suggestion-settings.json", data);
 }
 
 function getSuggestionConfig(guildId) {
