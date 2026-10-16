@@ -42,6 +42,7 @@ const modCommand = require("./commands/mod");
 const utilityCommand = require("./commands/utility");
 const securityCommand = require("./commands/security");
 const mediaCommand = require("./commands/media");
+const printCommand = require("./commands/print");
 
 const { registerTempVoiceEvents } = require("./features/tempVoice");
 const { registerCountingEvents } = require("./features/counting");
@@ -120,6 +121,7 @@ const commands = [
   utilityCommand,
   securityCommand,
   mediaCommand,
+  printCommand,
 ];
 
 const bot = new Client({

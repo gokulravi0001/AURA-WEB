@@ -19,8 +19,8 @@ function buildAnnouncementEmbed(data) {
 
   const embed = new EmbedBuilder()
     .setColor(isNaN(color) ? 0x5865f2 : color)
-    .setTitle(data.title)
-    .setDescription(data.description)
+    .setTitle(data.title || "Server Announcement")
+    .setDescription(data.description || data.content || "No details provided.")
     .setTimestamp(data.createdAt || Date.now());
 
   if (data.imageUrl) {
@@ -30,7 +30,74 @@ function buildAnnouncementEmbed(data) {
   return embed;
 }
 
+async function printAnnouncementPost(interaction) {
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  }
+
+  const all = getAnnouncements();
+  const serverAnnouncements = all.filter((a) => a.guildId === interaction.guildId);
+
+  if (serverAnnouncements.length === 0) {
+    return interaction.editReply("❌ No saved announcements found for this server. You can create one on the website or use `/announcement create`.");
+  }
+
+  const specificId = interaction.options.getString("announcement_id");
+  let item = null;
+
+  if (specificId) {
+    item = serverAnnouncements.find((a) => a.messageId === specificId);
+    if (!item) {
+      return interaction.editReply(`❌ Could not find announcement with ID \`${specificId}\`.`);
+    }
+  } else {
+    item =
+      serverAnnouncements.find((a) => typeof a.messageId === "string" && a.messageId.startsWith("web_")) ||
+      serverAnnouncements[serverAnnouncements.length - 1];
+  }
+
+  const channelOption = interaction.options.getChannel("channel");
+  let targetChannel = null;
+
+  if (channelOption) {
+    targetChannel = channelOption;
+  } else if (item.channelId) {
+    targetChannel = await fetchChannel(interaction.guild, item.channelId);
+  }
+  if (!targetChannel) {
+    targetChannel = interaction.channel;
+  }
+
+  if (!targetChannel) {
+    return interaction.editReply("❌ Could not find the channel to print the announcement into.");
+  }
+
+  const pingChoice = interaction.options.getString("ping");
+  let mentionContent = undefined;
+  if (pingChoice === "everyone") mentionContent = "@everyone";
+  else if (pingChoice === "here") mentionContent = "@here";
+  else if (item.ping) mentionContent = item.ping;
+
+  try {
+    const embed = buildAnnouncementEmbed(item);
+    const message = await targetChannel.send({
+      content: mentionContent,
+      embeds: [embed],
+    });
+
+    item.messageId = message.id;
+    item.channelId = targetChannel.id;
+    writeJson("announcements.json", all);
+
+    return interaction.editReply(`✅ **Announcement printed successfully in ${targetChannel}!** [Jump to Message](${message.url})`);
+  } catch (err) {
+    console.error("Could not print announcement:", err);
+    return interaction.editReply(`❌ Failed to print announcement into ${targetChannel}. Check AURA's channel permissions.`);
+  }
+}
+
 module.exports = {
+  printAnnouncementPost,
   data: new SlashCommandBuilder()
     .setName("announcement")
     .setDescription("Create, edit, or delete server announcements")
@@ -84,6 +151,35 @@ module.exports = {
       subcommand
         .setName("list")
         .setDescription("List active announcements created in this server"),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("print")
+        .setDescription("Print/post a saved announcement (e.g. created on the website) into a channel")
+        .addChannelOption((opt) =>
+          opt
+            .setName("channel")
+            .setDescription("Target channel (defaults to current channel or saved channel)")
+            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+            .setRequired(false),
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName("ping")
+            .setDescription("Mention audience")
+            .addChoices(
+              { name: "None", value: "none" },
+              { name: "@everyone", value: "everyone" },
+              { name: "@here", value: "here" },
+            )
+            .setRequired(false),
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName("announcement_id")
+            .setDescription("Optional Announcement ID to print (defaults to latest)")
+            .setRequired(false),
+        ),
     ),
 
   async execute(interaction) {
@@ -103,6 +199,10 @@ module.exports = {
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const action = interaction.options.getSubcommand();
+
+    if (action === "print") {
+      return printAnnouncementPost(interaction);
+    }
 
     if (action === "create") {
       const targetChannel = interaction.options.getChannel("channel") || interaction.channel;

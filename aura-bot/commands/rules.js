@@ -111,7 +111,89 @@ function formatRulesEmbed(parsed, guildName, colorHex) {
   return embed;
 }
 
+async function printRulesBoard(interaction) {
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  }
+
+  const all = getSavedRules();
+  const serverRules = all.filter((r) => r.guildId === interaction.guildId);
+
+  if (serverRules.length === 0) {
+    return interaction.editReply("❌ No saved rules found for this server. You can configure rules on the website or use `/rules create`.");
+  }
+
+  // Pick newest or pending web_rules_
+  const ruleRecord =
+    serverRules.find((r) => typeof r.messageId === "string" && r.messageId.startsWith("web_")) ||
+    serverRules[serverRules.length - 1];
+
+  const channelOption = interaction.options.getChannel("channel");
+  let targetChannel = null;
+
+  if (channelOption) {
+    targetChannel = channelOption;
+  } else if (ruleRecord.channelId) {
+    targetChannel = await fetchChannel(interaction.guild, ruleRecord.channelId);
+  }
+  if (!targetChannel) {
+    targetChannel = interaction.channel;
+  }
+
+  if (!targetChannel) {
+    return interaction.editReply("❌ Could not find the channel to print rules into.");
+  }
+
+  try {
+    let embed;
+    if (ruleRecord.rawText) {
+      const parsed = parseRulesText(ruleRecord.rawText);
+      embed = formatRulesEmbed(parsed, interaction.guild.name, ruleRecord.color || "#5865F2");
+    } else if (Array.isArray(ruleRecord.rules)) {
+      const color = ruleRecord.color ? parseInt(ruleRecord.color.replace("#", ""), 16) : 0x5865f2;
+      embed = new EmbedBuilder()
+        .setColor(isNaN(color) ? 0x5865f2 : color)
+        .setTitle(ruleRecord.title || `📜 ${interaction.guild.name} • Server Rules & Guidelines`)
+        .setTimestamp();
+
+      if (ruleRecord.header) {
+        embed.setDescription(ruleRecord.header);
+      }
+
+      const fields = ruleRecord.rules.map((rule, idx) => ({
+        name: `${idx + 1}. ${(rule.title || "Rule").replace(/^#+\s*/, "")}`,
+        value: rule.content || rule.description || "Follow all community guidelines.",
+        inline: false,
+      }));
+
+      embed.addFields(fields.slice(0, 25));
+      if (ruleRecord.bottom) {
+        embed.setFooter({ text: ruleRecord.bottom });
+      } else {
+        embed.setFooter({ text: "Please respect and follow all server rules" });
+      }
+    } else {
+      embed = new EmbedBuilder()
+        .setColor(0x5865f2)
+        .setTitle(`📜 ${interaction.guild.name} • Server Rules`)
+        .setDescription("Please respect and follow all server rules.");
+    }
+
+    const message = await targetChannel.send({ embeds: [embed] });
+
+    ruleRecord.messageId = message.id;
+    ruleRecord.channelId = targetChannel.id;
+    writeJson("rules.json", all);
+
+    return interaction.editReply(`✅ **Rules printed successfully in ${targetChannel}!** [Jump to Message](${message.url})`);
+  } catch (err) {
+    console.error("Could not print rules:", err);
+    return interaction.editReply(`❌ Failed to print rules into ${targetChannel}. Check AURA's channel permissions.`);
+  }
+}
+
 module.exports = {
+  printRulesBoard,
   data: new SlashCommandBuilder()
     .setName("rules")
     .setDescription("Create, edit, or delete server rules")
@@ -168,6 +250,18 @@ module.exports = {
       subcommand
         .setName("list")
         .setDescription("List active rules messages posted by AURA"),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("print")
+        .setDescription("Print/post saved rules (e.g. created on the website) into a channel")
+        .addChannelOption((opt) =>
+          opt
+            .setName("channel")
+            .setDescription("Target channel (defaults to current channel or saved channel)")
+            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+            .setRequired(false),
+        ),
     ),
 
   async execute(interaction) {
@@ -187,6 +281,10 @@ module.exports = {
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const action = interaction.options.getSubcommand();
+
+    if (action === "print") {
+      return printRulesBoard(interaction);
+    }
 
     if (action === "create") {
       const targetChannel = interaction.options.getChannel("channel") || interaction.channel;

@@ -21,12 +21,9 @@ function normalizeEmoji(value) {
   return customEmoji ? `${customEmoji[1]}:${customEmoji[2]}` : value;
 }
 
-/**
- * Builds the reaction-role embed displaying ONLY the Title and Description.
- * Roles and reactions are managed strictly in the background and are NOT listed in the embed text.
- */
 function makeEmbed(panel) {
-  const embed = new EmbedBuilder().setColor(0x8a2be2);
+  const hexColor = panel.color ? parseInt(panel.color.toString().replace("#", ""), 16) : 0x8a2be2;
+  const embed = new EmbedBuilder().setColor(isNaN(hexColor) ? 0x8a2be2 : hexColor);
 
   if (panel.title && panel.title.trim().length > 0) {
     embed.setTitle(panel.title.trim());
@@ -36,6 +33,10 @@ function makeEmbed(panel) {
 
   if (panel.description && panel.description.trim().length > 0) {
     embed.setDescription(panel.description.trim());
+  } else if (Array.isArray(panel.roles) && panel.roles.length > 0) {
+    embed.setDescription(panel.roles.map((r) => `${r.emoji} • <@&${r.roleId}>`).join("\n"));
+  } else {
+    embed.setDescription("React with the emojis below to receive your roles!");
   }
 
   return embed;
@@ -82,7 +83,100 @@ async function canManageRole(interaction, role) {
   return true;
 }
 
+async function printReactionRolePanel(interaction) {
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  }
+  const data = getData();
+  const guildPanels = data.panels.filter((p) => p.guildId === interaction.guildId);
+
+  if (guildPanels.length === 0) {
+    return interaction.editReply({
+      content: "❌ No reaction-role panels found for this server. You can configure one on the website or create one using `/reaction-role create`.",
+    });
+  }
+
+  const panelQuery = interaction.options.getString("panel_id");
+  let panel = null;
+
+  if (panelQuery) {
+    panel = guildPanels.find(
+      (p) =>
+        p.messageId === panelQuery ||
+        (p.title && p.title.toLowerCase().includes(panelQuery.toLowerCase())),
+    );
+    if (!panel) {
+      return interaction.editReply({
+        content: `❌ Could not find a reaction-role panel matching \`${panelQuery}\`. Run \`/reaction-role list\` to see available panels.`,
+      });
+    }
+  } else {
+    // Prioritize any panel with web_panel_ (pending print from website), otherwise the newest panel
+    panel =
+      guildPanels.find((p) => typeof p.messageId === "string" && p.messageId.startsWith("web_panel_")) ||
+      guildPanels[guildPanels.length - 1];
+  }
+
+  const channelOption = interaction.options.getChannel("channel");
+  let targetChannel = null;
+
+  if (channelOption) {
+    targetChannel = channelOption;
+  } else if (panel.channelId) {
+    targetChannel = await fetchChannel(interaction.guild, panel.channelId);
+  }
+  if (!targetChannel) {
+    targetChannel = interaction.channel;
+  }
+
+  if (!targetChannel) {
+    return interaction.editReply({
+      content: "❌ Could not find the channel to print the reaction-role panel into.",
+    });
+  }
+
+  try {
+    const embed = makeEmbed(panel);
+    const postedMsg = await targetChannel.send({ embeds: [embed] });
+
+    // Update panel references
+    panel.messageId = postedMsg.id;
+    panel.channelId = targetChannel.id;
+    writeJson("reaction-roles.json", data);
+
+    // React with each configured emoji sequentially
+    const reactedEmojis = [];
+    for (const item of panel.roles || []) {
+      if (!item.emoji) continue;
+      try {
+        const match = item.emoji.match(/:(\d+)>?$/);
+        if (match) {
+          await postedMsg.react(match[1]);
+        } else {
+          await postedMsg.react(item.emoji);
+        }
+        reactedEmojis.push(item.emoji);
+      } catch (e) {
+        console.error(`Could not react with ${item.emoji}:`, e.message);
+      }
+    }
+
+    return interaction.editReply({
+      content: `✅ **Reaction-role panel printed successfully in ${targetChannel}!** [Jump to Message](${postedMsg.url})\n` +
+               (reactedEmojis.length > 0
+                 ? `**Active Reactions:** ${reactedEmojis.join(" ")}\nMembers can now click these reactions to receive their roles!`
+                 : `*(No emojis configured yet. Use \`/reaction-role add\` to add reaction roles)*`),
+    });
+  } catch (err) {
+    console.error("Could not print reaction-role panel:", err);
+    return interaction.editReply({
+      content: `❌ Failed to print panel into ${targetChannel}. Ensure AURA has **Send Messages**, **Embed Links**, and **Add Reactions** permissions in that channel.`,
+    });
+  }
+}
+
 module.exports = {
+  printReactionRolePanel,
   data: new SlashCommandBuilder()
     .setName("reaction-role")
     .setDescription("Create and manage reaction-role panels (displays only Title and Description)")
@@ -200,6 +294,24 @@ module.exports = {
       subcommand
         .setName("list")
         .setDescription("List all reaction role panels and their background role mappings"),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("print")
+        .setDescription("Print/post a reaction-role panel (e.g. created on the website) into a channel")
+        .addChannelOption((opt) =>
+          opt
+            .setName("channel")
+            .setDescription("Target channel (defaults to current channel or panel channel)")
+            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+            .setRequired(false),
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName("panel_id")
+            .setDescription("Specific Panel ID or Title to print (defaults to latest configured panel)")
+            .setRequired(false),
+        ),
     ),
 
   async execute(interaction, bot) {
@@ -218,6 +330,10 @@ module.exports = {
     }
 
     const action = interaction.options.getSubcommand();
+
+    if (action === "print") {
+      return printReactionRolePanel(interaction);
+    }
 
     if (action === "create") {
       const channel = interaction.options.getChannel("channel", true);
