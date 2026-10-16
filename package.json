@@ -1,0 +1,20 @@
+{
+  "name": "aura-monorepo",
+  "version": "1.0.0",
+  "description": "AURA Bot & Dashboard",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "bot": "node aura-bot/bot.js",
+    "web": "node aura-web/server.js"
+  },
+  "keywords": ["discord", "bot", "aura"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.9",
+    "discord.js": "^14.27.0",
+    "dotenv": "^18.0.3",
+    "mongodb": "^7.7.0"
+  }
+}
